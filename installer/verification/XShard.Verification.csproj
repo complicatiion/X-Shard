@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+ <!-- Service/backend verification. References only XShard.Core (net10.0), so it also runs on Linux with a native extract-xiso. -->
+ <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
+ <ItemGroup><ProjectReference Include="../../src/XShard.Core/XShard.Core.csproj" /></ItemGroup>
+</Project>
