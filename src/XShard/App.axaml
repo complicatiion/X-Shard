@@ -1,0 +1,142 @@
+<Application xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:v="using:XShard.Views" xmlns:ctxt="clr-namespace:ColorTextBlock.Avalonia;assembly=ColorTextBlock.Avalonia" x:Class="XShard.App" RequestedThemeVariant="Dark">
+ <Application.Resources>
+  <ResourceDictionary>
+   <v:ModeIconConverter x:Key="ModeIcon"/>
+   <v:EnumLabelConverter x:Key="EnumLabel"/>
+   <v:PngBytesConverter x:Key="PngBytes"/>
+   <!-- Theme colors: every view uses DynamicResource Xs* so Dark/Light switch live. -->
+   <ResourceDictionary.ThemeDictionaries>
+    <!-- Dark: Windows 11 style neutral gray. The window itself shows Mica where available (ThemeService). -->
+    <ResourceDictionary x:Key="Dark">
+     <SolidColorBrush x:Key="XsWindowBg" Color="#202020"/>
+     <SolidColorBrush x:Key="XsCardBg" Color="#2B2B2B"/>
+     <SolidColorBrush x:Key="XsCardBorder" Color="#3A3A3A"/>
+     <SolidColorBrush x:Key="XsGlassBg" Color="#F22B2B2B"/>
+     <SolidColorBrush x:Key="XsGlassBorder" Color="#55FFFFFF"/>
+     <SolidColorBrush x:Key="XsSurface" Color="#373737"/>
+     <SolidColorBrush x:Key="XsSurfaceAlt" Color="#3A3A3A"/>
+     <SolidColorBrush x:Key="XsControlBg" Color="#2F2F2F"/>
+     <SolidColorBrush x:Key="XsHeaderBg" Color="#2B2B2B"/>
+     <SolidColorBrush x:Key="XsRowBg" Color="#323232"/>
+     <SolidColorBrush x:Key="XsSeparator" Color="#3D3D3D"/>
+     <SolidColorBrush x:Key="XsTrack" Color="#4A4A4A"/>
+     <SolidColorBrush x:Key="XsExpanderBg" Color="#333333"/>
+     <SolidColorBrush x:Key="XsText" Color="#FFFFFF"/>
+     <SolidColorBrush x:Key="XsTextMuted" Color="#ABABAB"/>
+     <SolidColorBrush x:Key="XsTextFaint" Color="#8C8C8C"/>
+     <SolidColorBrush x:Key="XsNegativeBg" Color="#4A2C30"/>
+     <SolidColorBrush x:Key="XsNegativeText" Color="#FFB2B6"/>
+     <SolidColorBrush x:Key="XsNegativeDisabledBg" Color="#3A2A2C"/>
+     <SolidColorBrush x:Key="XsNegativeDisabledText" Color="#9F6B71"/>
+     <SolidColorBrush x:Key="XsBackdrop" Color="#D9000000"/>
+    </ResourceDictionary>
+    <!-- Xbox: the former dark green theme (until v0.1.8 named "Dark"). -->
+    <ResourceDictionary x:Key="{x:Static v:ThemeService.XboxVariant}">
+     <SolidColorBrush x:Key="XsWindowBg" Color="#111A14"/>
+     <SolidColorBrush x:Key="XsCardBg" Color="#19221B"/>
+     <SolidColorBrush x:Key="XsCardBorder" Color="#334634"/>
+     <SolidColorBrush x:Key="XsGlassBg" Color="#E61A251D"/>
+     <SolidColorBrush x:Key="XsGlassBorder" Color="#5263855D"/>
+     <SolidColorBrush x:Key="XsSurface" Color="#272E27"/>
+     <SolidColorBrush x:Key="XsSurfaceAlt" Color="#303830"/>
+     <SolidColorBrush x:Key="XsControlBg" Color="#242724"/>
+     <SolidColorBrush x:Key="XsHeaderBg" Color="#343C35"/>
+     <SolidColorBrush x:Key="XsRowBg" Color="#18271D"/>
+     <SolidColorBrush x:Key="XsSeparator" Color="#364036"/>
+     <SolidColorBrush x:Key="XsTrack" Color="#535B54"/>
+     <SolidColorBrush x:Key="XsExpanderBg" Color="#293129"/>
+     <SolidColorBrush x:Key="XsText" Color="#EEF2ED"/>
+     <SolidColorBrush x:Key="XsTextMuted" Color="#9DAA9D"/>
+     <SolidColorBrush x:Key="XsTextFaint" Color="#82917F"/>
+     <SolidColorBrush x:Key="XsNegativeBg" Color="#462B2E"/>
+     <SolidColorBrush x:Key="XsNegativeText" Color="#FFB2B6"/>
+     <SolidColorBrush x:Key="XsNegativeDisabledBg" Color="#39252A"/>
+     <SolidColorBrush x:Key="XsNegativeDisabledText" Color="#9F6B71"/>
+     <SolidColorBrush x:Key="XsBackdrop" Color="#D9000000"/>
+    </ResourceDictionary>
+    <ResourceDictionary x:Key="Light">
+     <SolidColorBrush x:Key="XsWindowBg" Color="#EEF3EC"/>
+     <SolidColorBrush x:Key="XsCardBg" Color="#FFFFFF"/>
+     <SolidColorBrush x:Key="XsCardBorder" Color="#CCD8C8"/>
+     <SolidColorBrush x:Key="XsGlassBg" Color="#F5FFFFFF"/>
+     <SolidColorBrush x:Key="XsGlassBorder" Color="#99B9C9B4"/>
+     <SolidColorBrush x:Key="XsSurface" Color="#E3EAE0"/>
+     <SolidColorBrush x:Key="XsSurfaceAlt" Color="#E6ECE3"/>
+     <SolidColorBrush x:Key="XsControlBg" Color="#FFFFFF"/>
+     <SolidColorBrush x:Key="XsHeaderBg" Color="#E3EAE0"/>
+     <SolidColorBrush x:Key="XsRowBg" Color="#F3F7F1"/>
+     <SolidColorBrush x:Key="XsSeparator" Color="#D3DCCF"/>
+     <SolidColorBrush x:Key="XsTrack" Color="#C9D3C6"/>
+     <SolidColorBrush x:Key="XsExpanderBg" Color="#EDF2EA"/>
+     <SolidColorBrush x:Key="XsText" Color="#1A231B"/>
+     <SolidColorBrush x:Key="XsTextMuted" Color="#5C6A5C"/>
+     <SolidColorBrush x:Key="XsTextFaint" Color="#7A887A"/>
+     <SolidColorBrush x:Key="XsNegativeBg" Color="#F6DADC"/>
+     <SolidColorBrush x:Key="XsNegativeText" Color="#9C2531"/>
+     <SolidColorBrush x:Key="XsNegativeDisabledBg" Color="#F1E6E7"/>
+     <SolidColorBrush x:Key="XsNegativeDisabledText" Color="#B78A8F"/>
+     <SolidColorBrush x:Key="XsBackdrop" Color="#99202820"/>
+    </ResourceDictionary>
+   </ResourceDictionary.ThemeDictionaries>
+   <!-- Accent brushes; ThemeService replaces them for the chosen accent and theme. -->
+   <SolidColorBrush x:Key="XsAccent" Color="#318B3B"/>
+   <SolidColorBrush x:Key="XsAccentDim" Color="#253A28"/>
+   <SolidColorBrush x:Key="XsAccentSoft" Color="#253D2A"/>
+   <SolidColorBrush x:Key="XsAccentBorder" Color="#47764A"/>
+   <SolidColorBrush x:Key="XsAccentText" Color="#9BE584"/>
+   <SolidColorBrush x:Key="XsAccentProgress" Color="#79C35A"/>
+   <SolidColorBrush x:Key="XsOnAccent" Color="#FFFFFF"/>
+  </ResourceDictionary>
+ </Application.Resources>
+ <Application.Styles>
+  <FluentTheme><FluentTheme.Palettes><ColorPaletteResources x:Key="Dark" Accent="#66B94E"/><ColorPaletteResources x:Key="Light" Accent="#398E3D"/></FluentTheme.Palettes></FluentTheme>
+  <Style Selector="Window"><Setter Property="Background" Value="{DynamicResource XsWindowBg}"/><Setter Property="Foreground" Value="{DynamicResource XsText}"/><Setter Property="FontFamily" Value="Segoe UI"/></Style>
+  <Style Selector=".Markdown_Avalonia_MarkdownViewer ctxt|CCode"><Setter Property="Foreground" Value="{DynamicResource XsAccentText}"/></Style>
+  <Style Selector=".Markdown_Avalonia_MarkdownViewer TextBlock.CodeBlock"><Setter Property="Foreground" Value="{DynamicResource XsAccentText}"/></Style>
+  <Style Selector="Border.pill"><Setter Property="CornerRadius" Value="9"/><Setter Property="Padding" Value="10,6"/><Setter Property="Background" Value="{DynamicResource XsSurfaceAlt}"/></Style>
+  <Style Selector="Border.pill > TextBlock"><Setter Property="VerticalAlignment" Value="Center"/></Style>
+  <Style Selector="Button > StackPanel > TextBlock"><Setter Property="VerticalAlignment" Value="Center"/></Style>
+  <Style Selector="ComboBox"><Setter Property="Background" Value="{DynamicResource XsControlBg}"/><Setter Property="CornerRadius" Value="8"/><Setter Property="MinHeight" Value="40"/></Style>
+  <Style Selector="ComboBoxItem"><Setter Property="Background" Value="{DynamicResource XsControlBg}"/></Style>
+  <Style Selector="ComboBoxItem:selected /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource XsAccentSoft}"/></Style>
+  <Style Selector="ComboBoxItem:selected"><Setter Property="Background" Value="{DynamicResource XsAccentSoft}"/></Style>
+  <!-- Check marks and radio dots in the accent color instead of the system color. -->
+  <Style Selector="CheckBox:checked /template/ Border#NormalRectangle"><Setter Property="Background" Value="{DynamicResource XsAccent}"/><Setter Property="BorderBrush" Value="{DynamicResource XsAccent}"/></Style>
+  <Style Selector="CheckBox:checked /template/ Path#CheckGlyph"><Setter Property="Fill" Value="{DynamicResource XsOnAccent}"/></Style>
+  <Style Selector="RadioButton:checked /template/ Ellipse#OuterEllipse"><Setter Property="Stroke" Value="{DynamicResource XsAccent}"/><Setter Property="Fill" Value="{DynamicResource XsAccent}"/></Style>
+  <Style Selector="Slider /template/ Thumb"><Setter Property="Background" Value="{DynamicResource XsAccent}"/></Style>
+  <Style Selector="ProgressBar"><Setter Property="Foreground" Value="{DynamicResource XsAccentProgress}"/></Style>
+  <Style Selector="ToggleButton.xgdHeader:checked /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource XsExpanderBg}"/></Style>
+  <Style Selector="Button"><Setter Property="CornerRadius" Value="10"/><Setter Property="MinHeight" Value="40"/><Setter Property="Padding" Value="13,9"/><Setter Property="Background" Value="{DynamicResource XsSurface}"/><Setter Property="Foreground" Value="{DynamicResource XsText}"/><Setter Property="Cursor" Value="Hand"/></Style>
+  <Style Selector="Button.icon"><Setter Property="Width" Value="42"/><Setter Property="Height" Value="42"/><Setter Property="Padding" Value="11"/></Style>
+  <Style Selector="Button.activeLanguage"><Setter Property="Background" Value="{DynamicResource XsAccent}"/><Setter Property="Foreground" Value="{DynamicResource XsOnAccent}"/></Style>
+  <Style Selector="Button.positive"><Setter Property="Background" Value="{DynamicResource XsAccent}"/><Setter Property="Foreground" Value="{DynamicResource XsOnAccent}"/></Style>
+  <Style Selector="Button.positive:disabled /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource XsAccentDim}"/></Style>
+  <Style Selector="Button.negative"><Setter Property="Background" Value="{DynamicResource XsNegativeBg}"/><Setter Property="Foreground" Value="{DynamicResource XsNegativeText}"/></Style>
+  <Style Selector="Button.negative:disabled /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource XsNegativeDisabledBg}"/><Setter Property="Foreground" Value="{DynamicResource XsNegativeDisabledText}"/></Style>
+  <Style Selector="Button.swatch"><Setter Property="Width" Value="34"/><Setter Property="Height" Value="34"/><Setter Property="MinHeight" Value="34"/><Setter Property="CornerRadius" Value="17"/><Setter Property="Padding" Value="0"/><Setter Property="BorderThickness" Value="2"/><Setter Property="BorderBrush" Value="Transparent"/></Style>
+  <Style Selector="Button.swatch.activeSwatch"><Setter Property="BorderBrush" Value="{DynamicResource XsText}"/></Style>
+  <Style Selector="Button:pointerover /template/ ContentPresenter"><Setter Property="Opacity" Value="0.85"/></Style>
+  <Style Selector="Border.card"><Setter Property="Background" Value="{DynamicResource XsCardBg}"/><Setter Property="BorderBrush" Value="{DynamicResource XsCardBorder}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="16"/><Setter Property="Padding" Value="20"/></Style>
+  <Style Selector="Border.card.glass"><Setter Property="Background" Value="{DynamicResource XsGlassBg}"/><Setter Property="BorderBrush" Value="{DynamicResource XsGlassBorder}"/></Style>
+  <Style Selector="Border.backdrop"><Setter Property="Background" Value="{DynamicResource XsBackdrop}"/></Style>
+  <Style Selector="ListBoxItem:selected /template/ Border#ItemFrame"><Setter Property="BorderBrush" Value="{DynamicResource XsAccentBorder}"/><Setter Property="Background" Value="{DynamicResource XsAccentSoft}"/></Style>
+  <Style Selector="ListBoxItem /template/ ContentPresenter"><Setter Property="CornerRadius" Value="12"/></Style>
+  <Style Selector="ListBoxItem"><Setter Property="Template"><ControlTemplate><Border Name="ItemFrame" CornerRadius="12" Background="Transparent" BorderThickness="1" BorderBrush="Transparent"><ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" HorizontalContentAlignment="Stretch"/></Border></ControlTemplate></Setter><Setter Property="CornerRadius" Value="12"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/></Style>
+  <Style Selector="TextBlock.muted"><Setter Property="Foreground" Value="{DynamicResource XsTextMuted}"/></Style>
+  <Style Selector="TextBlock.accent"><Setter Property="Foreground" Value="{DynamicResource XsAccentText}"/></Style>
+  <Style Selector="TextBlock.heading"><Setter Property="FontSize" Value="20"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
+  <Style Selector="TextBlock.label"><Setter Property="FontSize" Value="10"/><Setter Property="Foreground" Value="{DynamicResource XsTextMuted}"/></Style>
+  <Style Selector="TextBlock.section"><Setter Property="FontSize" Value="15"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
+  <Style Selector="TextBox"><Setter Property="CornerRadius" Value="8"/><Setter Property="MinHeight" Value="40"/><Setter Property="VerticalContentAlignment" Value="Center"/></Style>
+  <Style Selector="TextBox.search"><Setter Property="MinHeight" Value="36"/><Setter Property="Padding" Value="34,6,10,6"/></Style>
+  <!-- Toolbar row (queue header/footer): search box, dropdowns and icon buttons share exactly 42 px. -->
+  <Style Selector="TextBox.toolbar"><Setter Property="Height" Value="42"/><Setter Property="MinHeight" Value="42"/><Setter Property="Padding" Value="34,0,10,0"/><Setter Property="VerticalContentAlignment" Value="Center"/></Style>
+  <Style Selector="ComboBox.toolbar"><Setter Property="Height" Value="42"/><Setter Property="MinHeight" Value="42"/><Setter Property="Padding" Value="12,0,8,0"/><Setter Property="VerticalContentAlignment" Value="Center"/></Style>
+  <Style Selector="Expander /template/ ToggleButton"><Setter Property="Background" Value="{DynamicResource XsExpanderBg}"/></Style>
+  <Style Selector="Expander /template/ Border"><Setter Property="Background" Value="{DynamicResource XsCardBg}"/></Style>
+  <Style Selector="v|AppIcon"><Setter Property="Stroke" Value="{DynamicResource XsText}"/></Style>
+  <Style Selector="Button.positive v|AppIcon, Button.activeLanguage v|AppIcon"><Setter Property="Stroke" Value="{DynamicResource XsOnAccent}"/></Style>
+  <Style Selector="Button.negative v|AppIcon"><Setter Property="Stroke" Value="{DynamicResource XsNegativeText}"/></Style>
+ </Application.Styles>
+</Application>

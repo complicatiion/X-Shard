@@ -1,0 +1,53 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:XShard.ViewModels" xmlns:m="using:XShard.Models" xmlns:v="using:XShard.Views" x:Name="PanelRoot" x:Class="XShard.Views.DetailsPanel" x:DataType="vm:MainViewModel">
+ <Grid RowDefinitions="Auto,*" RowSpacing="10">
+  <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto" ColumnSpacing="8">
+   <StackPanel x:Name="DetailsTitle" Orientation="Horizontal" Spacing="9" VerticalAlignment="Center"><v:AppIcon Kind="Details" Width="22" Height="22" VerticalAlignment="Center"/><TextBlock Text="{v:Tr Key=job_details}" Classes="heading" VerticalAlignment="Center"/></StackPanel>
+   <Border Grid.Column="1" Classes="pill" HorizontalAlignment="Left" VerticalAlignment="Center" IsVisible="{Binding HasSelectedJob}"><TextBlock Text="{Binding SelectedJob.Name}" TextTrimming="CharacterEllipsis"/></Border>
+   <Button Grid.Column="2" Classes="positive" IsEnabled="{Binding CanLaunch}" Click="Launch_Click" ToolTip.Tip="{v:Tr Key=start_in_emulator_tip}"><StackPanel Orientation="Horizontal" Spacing="8"><v:AppIcon Kind="Gamepad"/><TextBlock Text="{v:Tr Key=start_in_emulator}"/></StackPanel></Button>
+   <Button Grid.Column="3" Classes="icon" IsEnabled="{Binding HasSelectedJob}" Click="Refresh_Click" ToolTip.Tip="{v:Tr Key=refresh_source_contents}"><v:AppIcon Kind="Retry"/></Button>
+   <Button Grid.Column="4" Classes="icon" IsEnabled="{Binding HasSelectedJob}" Click="Export_Click" ToolTip.Tip="{v:Tr Key=export_log_as_txt}"><v:AppIcon Kind="Export"/></Button>
+   <Button Grid.Column="5" Classes="icon negative" Click="Close_Click" IsVisible="{Binding IsModal, ElementName=PanelRoot}" ToolTip.Tip="{v:Tr Key=close_details}"><v:AppIcon Kind="Cancel"/></Button>
+  </Grid>
+  <ScrollViewer Grid.Row="1" x:Name="OuterScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" AllowAutoHide="False">
+   <TabControl x:Name="DetailTabs" MinHeight="180">
+    <TabItem Header="{v:Tr Key=log}"><TextBox Text="{Binding SelectedLog}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Consolas" FontSize="11" VerticalContentAlignment="Top" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto"/></TabItem>
+    <TabItem Header="{v:Tr Key=image_contents}">
+     <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
+      <Grid>
+       <TextBox Classes="search" Text="{Binding ContentSearch}" Watermark="{v:Tr Key=filter_contents}"/>
+       <v:AppIcon Kind="Search" Width="16" Height="16" Margin="12,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" Opacity="0.7"/>
+      </Grid>
+      <TextBlock Grid.Row="1" Text="{Binding ContentStatus}" Classes="muted" TextWrapping="Wrap"/>
+      <ListBox Grid.Row="2" ItemsSource="{Binding FilteredContents}" Background="Transparent">
+       <ListBox.ItemTemplate><DataTemplate x:DataType="m:IsoContentEntry"><Grid ColumnDefinitions="*,110" ColumnSpacing="12"><TextBlock Text="{Binding Path}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Path}"/><TextBlock Grid.Column="1" Text="{Binding SizeText}" Classes="muted"/></Grid></DataTemplate></ListBox.ItemTemplate>
+      </ListBox>
+     </Grid>
+    </TabItem>
+    <TabItem Header="{v:Tr Key=title}">
+     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="18" Margin="4,8">
+      <Border Width="128" Height="128" CornerRadius="14" Background="{DynamicResource XsSurfaceAlt}" ClipToBounds="True" VerticalAlignment="Top">
+       <Grid>
+        <v:AppIcon Kind="Disc" Width="56" Height="56" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.5"/>
+        <Image x:Name="TitleImage" Source="{Binding SelectedIcon, Converter={StaticResource PngBytes}}" Stretch="UniformToFill" RenderOptions.BitmapInterpolationMode="HighQuality"/>
+       </Grid>
+      </Border>
+      <StackPanel Grid.Column="1" Spacing="8">
+       <TextBlock Text="{Binding TitleStatus}" Classes="muted" TextWrapping="Wrap" IsVisible="{Binding !HasTitleInfo}"/>
+       <ItemsControl ItemsSource="{Binding TitleFields}">
+        <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:TitleField"><Grid ColumnDefinitions="120,*" Margin="0,0,0,6"><TextBlock Text="{Binding Label}" Classes="muted"/><SelectableTextBlock Grid.Column="1" Text="{Binding Value}" TextWrapping="Wrap"/></Grid></DataTemplate></ItemsControl.ItemTemplate>
+       </ItemsControl>
+      </StackPanel>
+     </Grid>
+    </TabItem>
+    <TabItem Header="{v:Tr Key=target_preview}">
+     <StackPanel Spacing="10" Margin="4,8">
+      <TextBlock Text="{v:Tr Key=target_preview_intro}" Classes="muted" TextWrapping="Wrap"/>
+      <Border Classes="pill" Padding="12,10"><SelectableTextBlock Text="{Binding PreviewText}" FontFamily="Consolas" FontSize="12" TextWrapping="Wrap"/></Border>
+      <TextBlock Text="{Binding PreviewSpaceText}" TextWrapping="Wrap"/>
+      <Border Classes="pill" Background="#4C292F" IsVisible="{Binding PreviewInsufficient}"><StackPanel Orientation="Horizontal" Spacing="8"><v:AppIcon Kind="Warning" Stroke="#FFA9B0" Width="18" Height="18"/><TextBlock Text="{v:Tr Key=not_enough_free_space_on_the_target}" Foreground="#FFA9B0"/></StackPanel></Border>
+     </StackPanel>
+    </TabItem>
+   </TabControl>
+  </ScrollViewer>
+ </Grid>
+</UserControl>

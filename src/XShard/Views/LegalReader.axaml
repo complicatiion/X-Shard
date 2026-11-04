@@ -1,0 +1,11 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:md="clr-namespace:Markdown.Avalonia;assembly=Markdown.Avalonia" xmlns:ctxt="clr-namespace:ColorTextBlock.Avalonia;assembly=ColorTextBlock.Avalonia" xmlns:vm="using:XShard.ViewModels" xmlns:s="using:XShard.Services" x:Class="XShard.Views.LegalReader" x:DataType="vm:MainViewModel">
+ <Grid RowDefinitions="Auto,*" RowSpacing="12" ClipToBounds="True">
+  <ComboBox ItemsSource="{Binding Legal.Documents}" SelectedItem="{Binding SelectedLegalDocument}" HorizontalAlignment="Stretch"><ComboBox.ItemTemplate><DataTemplate x:DataType="s:LegalDocument"><TextBlock Text="{Binding Title}"/></DataTemplate></ComboBox.ItemTemplate></ComboBox>
+  <ScrollViewer x:Name="ReaderScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" AllowAutoHide="True" ClipToBounds="True" Background="{DynamicResource XsCardBg}">
+   <Border Padding="8,0,26,12" ClipToBounds="True"><md:MarkdownScrollViewer x:Name="MarkdownBody" Markdown="{Binding SelectedLegalMarkdown}" Classes.gpl="{Binding IsGplDocument}" MaxWidth="820" HorizontalAlignment="Center" ClipToBounds="True">
+    <md:MarkdownScrollViewer.MarkdownStyle><Styles><StyleInclude Source="avares://Markdown.Avalonia/StyleCollections/MarkdownStyleFluentTheme.axaml"/><Style Selector="ctxt|CTextBlock.Heading1"><Setter Property="FontSize" Value="23"/><Setter Property="Foreground" Value="{DynamicResource XsAccentText}"/></Style><Style Selector="ctxt|CTextBlock.Heading2"><Setter Property="FontSize" Value="19"/><Setter Property="Foreground" Value="{DynamicResource XsAccentText}"/></Style><Style Selector="ctxt|CTextBlock.Heading3"><Setter Property="FontSize" Value="17"/><Setter Property="Foreground" Value="{DynamicResource XsAccentText}"/></Style></Styles></md:MarkdownScrollViewer.MarkdownStyle>
+   </md:MarkdownScrollViewer></Border>
+  </ScrollViewer>
+ </Grid>
+ <UserControl.Styles><Style Selector="md|MarkdownScrollViewer.gpl ctxt|CTextBlock"><Setter Property="TextAlignment" Value="Center"/></Style></UserControl.Styles>
+</UserControl>

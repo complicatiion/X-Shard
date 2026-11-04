@@ -1,0 +1,64 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType><TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <!-- Windows SDK projection for toast notifications; still runs on Windows 10 1809 and newer. -->
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <AssemblyName>X-Shard</AssemblyName><RootNamespace>XShard</RootNamespace>
+    <Version>0.1.9</Version><AssemblyVersion>0.1.9.0</AssemblyVersion><FileVersion>0.1.9.0</FileVersion>
+    <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression><Authors>Sven Klocke</Authors><Company>sksdesign</Company><Product>X-Shard</Product><Copyright>Copyright © 2026 Sven Klocke</Copyright>
+    <ApplicationIcon>Assets/app-icon.ico</ApplicationIcon>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <PublishSingleFile>true</PublishSingleFile><SelfContained>true</SelfContained>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <PublishTrimmed>false</PublishTrimmed><DebugType>embedded</DebugType>
+  </PropertyGroup>
+  <!--
+    Release packaging on build: a Visual Studio Release build runs installer/publish-portable.ps1 afterwards
+    (self-contained single-file publish, portable ZIP, Inno Setup installer, SHA-256 files in /artifacts).
+    Debug builds are never affected. CLI: dotnet build -c Release -p:XShardPackageOnBuild=true
+    Opt-out:  -p:XShardPackageOnBuild=false   Portable only: -p:XShardBuildInstaller=false
+    XShardReleaseScript=true is passed by the script itself and prevents recursion.
+  -->
+  <PropertyGroup>
+    <XShardPackageOnBuild Condition="'$(XShardPackageOnBuild)' == '' and '$(Configuration)' == 'Release' and '$(BuildingInsideVisualStudio)' == 'true'">true</XShardPackageOnBuild>
+    <XShardBuildInstaller Condition="'$(XShardBuildInstaller)' == ''">true</XShardBuildInstaller>
+  </PropertyGroup>
+  <Target Name="XShardPackageRelease" AfterTargets="Build"
+          Condition="'$(XShardPackageOnBuild)' == 'true' and '$(XShardReleaseScript)' != 'true' and '$(DesignTimeBuild)' != 'true' and '$(OS)' == 'Windows_NT'">
+    <PropertyGroup>
+      <XShardRepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\..'))</XShardRepoRoot>
+      <XShardPowerShell Condition="Exists('$(ProgramW6432)\PowerShell\7\pwsh.exe')">&quot;$(ProgramW6432)\PowerShell\7\pwsh.exe&quot;</XShardPowerShell>
+      <XShardPowerShell Condition="'$(XShardPowerShell)' == ''">powershell.exe</XShardPowerShell>
+      <XShardInstallerSwitch Condition="'$(XShardBuildInstaller)' == 'true'">-BuildInstaller</XShardInstallerSwitch>
+    </PropertyGroup>
+    <Message Importance="high" Condition="'$(XShardBuildInstaller)' == 'true'" Text="X-Shard: packaging self-contained release (portable ZIP + Inno Setup installer) ..." />
+    <Message Importance="high" Condition="'$(XShardBuildInstaller)' != 'true'" Text="X-Shard: packaging self-contained release (portable ZIP) ..." />
+    <Exec Command="$(XShardPowerShell) -NoProfile -NonInteractive -ExecutionPolicy Bypass -File &quot;$(XShardRepoRoot)\installer\publish-portable.ps1&quot; $(XShardInstallerSwitch) -FromMSBuild"
+          WorkingDirectory="$(XShardRepoRoot)" />
+  </Target>
+  <ItemGroup>
+    <PackageReference Include="Markdown.Avalonia.Tight" Version="11.0.3" />
+    <PackageReference Include="Avalonia" Version="11.3.22" />
+    <PackageReference Include="Avalonia.BuildServices" Version="11.3.2" ExcludeAssets="all" PrivateAssets="all" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.22" />
+    <AvaloniaResource Include="Assets/**" />
+    <Content Include="Assets/toast-icon.png" Link="Assets/toast-icon.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <ProjectReference Include="../XShard.Core/XShard.Core.csproj" />
+    <Content Include="../../Localization/*.xml" Link="Localization/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <Content Include="../../docs/legal/*.md" Exclude="../../docs/legal/README.md" Link="legal/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <Content Include="../../sources/X-Shard-source-$(Version).zip" Condition="Exists('../../sources/X-Shard-source-$(Version).zip')" Link="sources/X-Shard-source-$(Version).zip" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <Content Include="../../sources/XGDTool-source-v1.0.0.zip" Link="sources/XGDTool-source-v1.0.0.zip" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <Content Include="tools/*.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <Content Update="tools/extract-xiso.exe" Link="backends/extract-xiso/extract-xiso.exe" TargetPath="backends/extract-xiso/extract-xiso.exe" />
+    <Content Update="tools/XGDTool.exe" Link="backends/XGDTool/XGDTool.exe" TargetPath="backends/XGDTool/XGDTool.exe" />
+    <Content Include="../../licenses/**" Link="licenses/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <Content Include="../../LICENSE.md" Link="LICENSE.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+  </ItemGroup>
+</Project>
