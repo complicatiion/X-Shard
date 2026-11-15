@@ -26,6 +26,7 @@ public partial class MainWindow : Window
   ThemeService.Apply(vm.Theme,vm.Accent,this);
   vm.AppearanceChanged+=()=>ThemeService.Apply(vm.Theme,vm.Accent,this);
   vm.RunFinished+=OnRunFinished;
+  vm.UpdateFound+=update=>WindowsIntegration.ShowToast(L.T("X-Shard update available"),string.Format(L.T("update_toast"),update.Latest,update.Current));
   vm.ResetRequested+=()=>{WindowsIntegration.UnregisterContextMenu();WindowsIntegration.UnregisterToasts();UpdateContextMenuCheck();};
   timer.Tick+=(_,_)=>{vm.DrainOutput();UpdateTaskbar();};timer.Start();
   SizeChanged+=(_,_)=>{vm.UpdateViewport(ClientSize.Width,ClientSize.Height);ResizeCards();};
@@ -174,13 +175,8 @@ public partial class MainWindow : Window
  }
  private async Task AddPathsAsync(IEnumerable<string> paths)
  {
-  foreach(var path in paths)
-  {
-   if(Directory.Exists(path)&&vm.Mode!=XisoMode.Create&&!(vm.UsesXgd&&TitleInfoReader.FindStfsHeader(path)!=null))
-   {var images=await Task.Run(()=>FolderBatchService.EnumerateImages(path,vm.RecursiveFolders,vm.UsesXgd,CancellationToken.None));vm.AddSources(images.Count>0?images:[path]);}
-   else vm.AddSources([path]);
-  }
-  await vm.SaveQueueSafelyAsync();
+  // Folders are expanded and checked in the background (network shares), see MainViewModel.AddSourcesAsync.
+  await vm.AddSourcesAsync(paths,expandFolders:true);
  }
 
  // ---------- settings helpers ----------
@@ -215,6 +211,8 @@ public partial class MainWindow : Window
  private void OpenFolder(string folder){try{Directory.CreateDirectory(folder);Process.Start(new ProcessStartInfo(folder){UseShellExecute=true});}catch(Exception ex){vm.ReportError(ex);}}
  private void OpenLogs_Click(object? s,RoutedEventArgs e)=>OpenFolder(vm.LogsDirectory);
  private void OpenReports_Click(object? s,RoutedEventArgs e)=>OpenFolder(vm.ReportsDirectory);
+ /// <summary>v0.2.2: emulator folders in X-Shard's data folder; "xemu-system" is where the user places MCPX/BIOS/HDD dumps.</summary>
+ private void OpenEmulatorFolder_Click(object? sender,RoutedEventArgs e)=>OpenFolder((sender as Control)?.Tag as string switch {"xemu"=>vm.XemuFolder,"xemu-system"=>vm.XemuSystemFolder,_=>vm.XeniaFolder});
  private async void ExportReport_Click(object? s,RoutedEventArgs e)=>await Guard(async()=>
  {
   if(vm.LastReport is not {} report)return;
@@ -262,12 +260,12 @@ public partial class MainWindow : Window
   if(vm.Mode==XisoMode.Create)
   {
    var folders=await StorageProvider.OpenFolderPickerAsync(new(){Title=L.T("Choose source folder"),AllowMultiple=true});
-   vm.AddSources(folders.Select(f=>f.TryGetLocalPath()).OfType<string>());
+   await vm.AddSourcesAsync(folders.Select(f=>f.TryGetLocalPath()).OfType<string>());
   }
   else
   {
    var files=await StorageProvider.OpenFilePickerAsync(new(){Title=L.T("Add ISO images"),AllowMultiple=true,FileTypeFilter=[IsoType,FilePickerFileTypes.All]});
-   vm.AddSources(files.Select(f=>f.TryGetLocalPath()).OfType<string>());
+   await vm.AddSourcesAsync(files.Select(f=>f.TryGetLocalPath()).OfType<string>());
   }
   await vm.SaveQueueSafelyAsync();
  });
@@ -285,14 +283,19 @@ public partial class MainWindow : Window
  private async void BatchFolder_Click(object? sender,RoutedEventArgs e)=>await Guard(async()=>
  {
   var folders=await StorageProvider.OpenFolderPickerAsync(new(){Title=L.T("Choose folder containing ISO images"),AllowMultiple=true});
-  foreach(var folder in folders)
-   if(folder.TryGetLocalPath() is {} path){var images=await Task.Run(()=>FolderBatchService.EnumerateImages(path,vm.RecursiveFolders,vm.UsesXgd,CancellationToken.None));vm.AddSources(images);}
-  await vm.SaveQueueSafelyAsync();
+  await vm.AddSourcesAsync(folders.Select(f=>f.TryGetLocalPath()).OfType<string>(),expandFolders:true,folderFallback:false);
  });
  private async void GameFolder_Click(object? sender,RoutedEventArgs e)=>await Guard(async()=>
  {
   var folders=await StorageProvider.OpenFolderPickerAsync(new(){Title=L.T("Choose extracted game or GoD folder"),AllowMultiple=true});
-  vm.AddSources(folders.Select(f=>f.TryGetLocalPath()).OfType<string>());await vm.SaveQueueSafelyAsync();
+  await vm.AddSourcesAsync(folders.Select(f=>f.TryGetLocalPath()).OfType<string>());
+ });
+ /// <summary>v0.2.0: queue existing GoD packages or extracted Xbox 360 games for transfer to the console.</summary>
+ private async void SendToConsole_Click(object? sender,RoutedEventArgs e)=>await Guard(async()=>
+ {
+  if(vm.IsRunning){vm.Message=L.T("Jobs can be added after the current queue run.");return;}
+  var folders=await StorageProvider.OpenFolderPickerAsync(new(){Title=L.T("Choose GoD or extracted game folders"),AllowMultiple=true});
+  await vm.SendToConsoleAsync(folders.Select(f=>f.TryGetLocalPath()).OfType<string>());
  });
  private async void XgdBackend_Click(object? sender,RoutedEventArgs e)=>await Guard(async()=>
  {

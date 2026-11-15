@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <AssemblyName>X-Shard</AssemblyName><RootNamespace>XShard</RootNamespace>
-    <Version>0.1.9</Version><AssemblyVersion>0.1.9.0</AssemblyVersion><FileVersion>0.1.9.0</FileVersion>
+    <Version>0.2.2</Version><AssemblyVersion>0.2.2.0</AssemblyVersion><FileVersion>0.2.2.0</FileVersion>
     <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression><Authors>Sven Klocke</Authors><Company>sksdesign</Company><Product>X-Shard</Product><Copyright>Copyright © 2026 Sven Klocke</Copyright>
     <ApplicationIcon>Assets/app-icon.ico</ApplicationIcon>
     <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
@@ -19,7 +19,7 @@
     <PublishTrimmed>false</PublishTrimmed><DebugType>embedded</DebugType>
   </PropertyGroup>
   <!--
-    Release packaging on build: a Visual Studio Release build runs installer/publish-portable.ps1 afterwards
+    Release packaging on build: a Visual Studio Release build runs build/publish.ps1 afterwards
     (self-contained single-file publish, portable ZIP, Inno Setup installer, SHA-256 files in /artifacts).
     Debug builds are never affected. CLI: dotnet build -c Release -p:XShardPackageOnBuild=true
     Opt-out:  -p:XShardPackageOnBuild=false   Portable only: -p:XShardBuildInstaller=false
@@ -35,11 +35,11 @@
       <XShardRepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\..'))</XShardRepoRoot>
       <XShardPowerShell Condition="Exists('$(ProgramW6432)\PowerShell\7\pwsh.exe')">&quot;$(ProgramW6432)\PowerShell\7\pwsh.exe&quot;</XShardPowerShell>
       <XShardPowerShell Condition="'$(XShardPowerShell)' == ''">powershell.exe</XShardPowerShell>
-      <XShardInstallerSwitch Condition="'$(XShardBuildInstaller)' == 'true'">-BuildInstaller</XShardInstallerSwitch>
+      <XShardInstallerSwitch Condition="'$(XShardBuildInstaller)' != 'true'">-PortableOnly</XShardInstallerSwitch>
     </PropertyGroup>
     <Message Importance="high" Condition="'$(XShardBuildInstaller)' == 'true'" Text="X-Shard: packaging self-contained release (portable ZIP + Inno Setup installer) ..." />
     <Message Importance="high" Condition="'$(XShardBuildInstaller)' != 'true'" Text="X-Shard: packaging self-contained release (portable ZIP) ..." />
-    <Exec Command="$(XShardPowerShell) -NoProfile -NonInteractive -ExecutionPolicy Bypass -File &quot;$(XShardRepoRoot)\installer\publish-portable.ps1&quot; $(XShardInstallerSwitch) -FromMSBuild"
+    <Exec Command="$(XShardPowerShell) -NoProfile -NonInteractive -ExecutionPolicy Bypass -File &quot;$(XShardRepoRoot)\build\publish.ps1&quot; $(XShardInstallerSwitch) -FromMSBuild"
           WorkingDirectory="$(XShardRepoRoot)" />
   </Target>
   <ItemGroup>

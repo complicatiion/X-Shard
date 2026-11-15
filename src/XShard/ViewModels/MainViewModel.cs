@@ -16,7 +16,7 @@ public sealed partial class MainViewModel : ViewModelBase
 
  // ---------- console / operation / format ----------
  public ConsolePlatform[] Platforms=>Enum.GetValues<ConsolePlatform>();
- public XisoMode[] Modes => Enum.GetValues<XisoMode>();
+ public XisoMode[] Modes => Enum.GetValues<XisoMode>().Where(m=>m!=XisoMode.Upload).ToArray();
  public OutputFormat[] Formats=>JobPlanner.FormatsFor(Platform);
  public DeviceProfile[] Profiles=>JobPlanner.ProfilesFor(Platform);
  private ConsolePlatform platform;
@@ -161,13 +161,17 @@ public sealed partial class MainViewModel : ViewModelBase
   // v0.1.9 defaults: Dark (gray, Mica) + Green accent. Settings written by 0.1.9 pre-release builds (revision 2)
   // were migrated to "Xbox"/"Windows" automatically; restore the final defaults once.
   if(hadSettings&&settings.DefaultsRevision==2){if(settings.Theme=="Xbox")settings.Theme="Dark";if(settings.Accent=="Windows")settings.Accent="Green";}
+  // v0.2.1: the Xbox 360 console profile keeps the GoD padding. Only the former profile default (Full) is changed.
+  if(hadSettings&&settings.DefaultsRevision<4&&settings.Profile==DeviceProfile.Xbox360&&settings.Scrub==ScrubMode.Full)settings.Scrub=ScrubMode.None;
   disableMediaPatching=settings.DisableMediaPatching;continueOnError=settings.ContinueOnError;
   LoadFeatureSettings(settings);
+  InitializeNetwork();
+  InitializeUpdates();
   foreach(var saved in Storage.Load("queue.json",()=>new List<SavedJob>()))
   {
    if(saved is null||saved.Options is null||string.IsNullOrWhiteSpace(saved.Options.Source)||saved.Options.Destination is null||!Enum.IsDefined(saved.Options.Mode)||!Enum.IsDefined(saved.Options.Platform)||!Enum.IsDefined(saved.Status)){Message="An invalid saved queue entry was skipped.";continue;}
    var state=saved.Status==JobStatus.Running?JobStatus.Interrupted:saved.Status;
-   var job=new XisoJob{Id=saved.Id,Options=BackendPolicy.Normalize(saved.Options),Status=state,Result=state==JobStatus.Interrupted?"Interrupted. Retry to restart.":saved.Result,PublishedPath=saved.PublishedPath};
+   var job=new XisoJob{Id=saved.Id,Options=BackendPolicy.Normalize(saved.Options),Status=state,Result=state==JobStatus.Interrupted?"Interrupted. Retry to restart.":saved.Result,PublishedPath=saved.PublishedPath,RemotePath=saved.RemotePath};
    Jobs.Add(job);QueueTitleRead(job);
   }
   StartCommand=new AsyncRelayCommand(StartAsync,ReportError,()=>!ShowLegal&&!IsRunning&&Jobs.Any(j=>j.Status==JobStatus.Waiting));
@@ -182,6 +186,9 @@ public sealed partial class MainViewModel : ViewModelBase
    if(SelectedJob is not {} job)return;
    try
    {
+    // A failed console transfer is retried as a transfer of the existing result (the conversion is not repeated).
+    if(job.Options.UploadToConsole&&job.Options.Mode!=XisoMode.Upload&&job.PublishedPath is {} done&&(Directory.Exists(done)||File.Exists(done)))
+     job.Options=job.Options with {Mode=XisoMode.Upload,Source=done,Destination=""};
     JobExecutor.Validate(job.Options);
     if(Jobs.Any(other=>other!=job&&other.Status is JobStatus.Waiting or JobStatus.Running&&other.Options.Destination!=""&&other.Options.Destination.Equals(job.Options.Destination,StringComparison.OrdinalIgnoreCase)))throw new IOException("Another queued job uses this destination.");
     job.Status=JobStatus.Waiting;job.Result="Ready to retry";Refresh();
@@ -214,7 +221,8 @@ public sealed partial class MainViewModel : ViewModelBase
   BackendReady=UsesXgd?XgdReady:XisoReady;
  }
  /// <summary>Current job settings as a planner request.</summary>
- public JobRequest CurrentRequest=>new(Mode,Platform,OutputDirectory,Format,Profile,Scrub,Split,AttachXbe,PatchMedia,RenameXbe,Offline,Advanced,SkipSystemUpdate,DisableMediaPatching,OutputTarget!=OutputTarget.Custom);
+ public JobRequest CurrentRequest=>new(Mode,Platform,OutputDirectory,Format,Profile,Scrub,Split,AttachXbe,PatchMedia,RenameXbe,Offline,Advanced,SkipSystemUpdate,DisableMediaPatching,
+  OutputTarget is not (OutputTarget.Custom or OutputTarget.XboxConsole),OutputTarget==OutputTarget.XboxConsole&&FtpEnabled,DeletesTransferCopy);
  public void AddSources(IEnumerable<string> paths)
  {
   if(ShowLegal){Message=L.T("Review and accept the legal documents first.");return;}
@@ -234,9 +242,10 @@ public sealed partial class MainViewModel : ViewModelBase
  }
  private async Task StartAsync()
  {
+  if(!ConsoleJobsReady())return;
   await TestBackendAsync();
   string Resolve(XisoJobOptions option)=>(BackendPolicy.For(option)==BackendEngine.XgdTool?XgdToolService.FindBackend(XgdBackendPath):XisoProcessService.FindBackend(BackendPath))??throw new IOException("Backend not detected for "+option.Engine);
-  foreach(var job in Jobs.Where(j=>j.Status==JobStatus.Waiting))
+  foreach(var job in Jobs.Where(j=>j.Status==JobStatus.Waiting&&j.Options.Mode!=XisoMode.Upload))
    if(BackendPolicy.For(job.Options)==BackendEngine.XgdTool?!XgdReady:!XisoReady)throw new IOException("Backend not detected for "+job.Options.Engine);
   await ConfirmQueuedOnlineJobsAsync();
   if(!await ConfirmFreeSpaceAsync())return;
@@ -245,6 +254,7 @@ public sealed partial class MainViewModel : ViewModelBase
   await Queue.RunAsync(Resolve,ContinueOnError,(job,line,error)=>output.Enqueue((job,line,error)),SaveQueueSafelyAsync);
   DrainOutput();Message="";
   await FinishRunAsync(started,runJobs.Where(j=>j.Status!=JobStatus.Waiting).ToList());
+  _=RefreshTransferSizeAsync();
  }
  public void DrainOutput()
  {
@@ -283,7 +293,7 @@ public sealed partial class MainViewModel : ViewModelBase
  private async Task SaveQueueAsync(bool throwOnError)
  {
   await saveGate.WaitAsync();
-  try{await Storage.SaveAsync("queue.json",Jobs.Select(j=>new SavedJob(j.Id,j.Options,j.Status,j.Result,j.PublishedPath)).ToList());}
+  try{await Storage.SaveAsync("queue.json",Jobs.Select(j=>new SavedJob(j.Id,j.Options,j.Status,j.Result,j.PublishedPath,j.RemotePath)).ToList());}
   catch(Exception ex) when(!throwOnError){Message="Queue could not be saved: "+ex.Message;}
   finally{saveGate.Release();}
  }
@@ -292,6 +302,7 @@ public sealed partial class MainViewModel : ViewModelBase
   queueDirty=true;
   foreach(var name in new[]{nameof(TotalProgress),nameof(TotalProgressText),nameof(IsRunning),nameof(IsQueueEmpty),nameof(CanReset),nameof(CanChangeDataLocation),nameof(CompletedCount),nameof(WaitingCount),nameof(FailedCount),nameof(TotalCount),nameof(CanLaunch)})Changed(name);
   StartCommand.Refresh();CancelCommand.Refresh();StopCommand.Refresh();CancelPendingCommand.Refresh();RemoveCommand.Refresh();RetryCommand.Refresh();ClearCommand.Refresh();ClearAllCommand.Refresh();TestBackendCommand.Refresh();SaveSettingsCommand.Refresh();
+  SendSelectedToConsoleCommand?.Refresh();CleanTransferCommand?.Refresh();
   RefreshFilter();
  }
 }

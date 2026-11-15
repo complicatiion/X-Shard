@@ -31,7 +31,8 @@ public sealed class XgdToolService(XisoProcessService runner)
   if(options.Offline)args.Add("--offline");
   if(options.Mode!=XisoMode.List)
   {
-   var scrub=options.Mode==XisoMode.Rewrite?ScrubMode.Full:options.Scrub;
+   // v0.2.2: Rewrite follows the chosen scrub mode (None keeps the padding; formerly always Full).
+   var scrub=options.Scrub;
    if(scrub==ScrubMode.Partial)args.Add("--partial-scrub");
    if(scrub==ScrubMode.Full)args.Add("--full-scrub");
    if(options.Split) {if(flag!="--xiso")throw new ArgumentException("Split requires XISO output.");args.Add("--split");}
@@ -68,17 +69,26 @@ public sealed class XgdToolService(XisoProcessService runner)
   if(code!=0||!text.Any(char.IsDigit)) throw new IOException("Selected file is not a working XGDTool CLI backend.");
   return "XGDTool "+text;
  }
- /// <summary>Runs XGDTool in a private staging folder and publishes the result. Returns the published path (container folder, or the single file when FlattenOutput applies).</summary>
- public async Task<string> ExecuteAsync(XisoJobOptions options,string path,Action<string,bool> output,CancellationToken token)
+ /// <summary>
+ /// Runs XGDTool in a private staging folder and publishes the result. Returns the published path (container folder, or
+ /// the single file when FlattenOutput applies). Extract output for a network destination is staged locally first and
+ /// copied to the share in parallel (see <see cref="JobExecutor.LocalStageFor"/>).
+ /// </summary>
+ public async Task<string> ExecuteAsync(XisoJobOptions options,string path,Action<string,bool> output,CancellationToken token,JobExecutor? executor=null,ICollection<string>? created=null)
  {
   token.ThrowIfCancellationRequested();
-  string? stage=null;bool committed=false;int failures=0;int listed=0;
+  created??=new List<string>();
+  string? stage=null,local=null;bool committed=false;int failures=0;int listed=0;
+  var policy=executor?.Network??RetryPolicy.Default;
   try
   {
    if(options.Mode!=XisoMode.List)
    {
     var parent=Path.GetDirectoryName(options.Destination)!;Directory.CreateDirectory(parent);
-    stage=Path.Combine(parent,".xshard-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(stage);
+    var format=options.Format==OutputFormat.ConsoleDefault?(options.Platform==ConsolePlatform.Xbox360?OutputFormat.GoD:OutputFormat.Extract):options.Format;
+    var manyFiles=options.Mode==XisoMode.Extract||options.Mode==XisoMode.Convert&&format==OutputFormat.Extract;
+    local=executor?.LocalStageFor(options,manyFiles,text=>output(text,false));
+    stage=local??Path.Combine(parent,".xshard-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(stage);created.Add(stage);
    }
    var code=await runner.RunAsync(path,BuildArguments(options,stage??""),stage??AppContext.BaseDirectory,(line,error)=>
    {if(IsFailureLine(line))Interlocked.Increment(ref failures);if(line.Contains("Files in image:"))Interlocked.Increment(ref listed);output(line,error);},token);
@@ -86,15 +96,19 @@ public sealed class XgdToolService(XisoProcessService runner)
    token.ThrowIfCancellationRequested();
    if(stage==null)return "";
    if(!Directory.EnumerateFileSystemEntries(stage).Any())throw new IOException("XGDTool did not produce output.");
-   if(options.FlattenOutput&&Directory.GetFiles(stage,"*",SearchOption.AllDirectories) is [var single])
+   var publish=stage;
+   if(local!=null&&executor!=null)publish=await executor.PublishLocalStageAsync(local,options,created,output,token);
+   void Log(string text)=>output(text,true);
+   if(options.FlattenOutput&&Directory.GetFiles(publish,"*",SearchOption.AllDirectories) is [var single])
    {
     // Library targets (emulators/frontends) expect the image directly in the game folder.
     var target=UniqueFilePath(Path.Combine(Path.GetDirectoryName(options.Destination)!,Path.GetFileName(single)));
-    File.Move(single,target,false);committed=true;
-    try{Directory.Delete(stage,true);}catch(IOException){}catch(UnauthorizedAccessException){}
+    await ResilientIO.MoveFileAsync(single,target,Log,token,policy);committed=true;
+    foreach(var folder in created)ResilientIO.TryDeleteDirectory(folder);
     output("Completed: "+target,false);return target;
    }
-   Directory.Move(stage,options.Destination);committed=true;
+   await ResilientIO.MoveDirectoryAsync(publish,options.Destination,Log,token,policy);committed=true;
+   if(local!=null)ResilientIO.TryDeleteDirectory(local);
    output("Completed: "+options.Destination,false);return options.Destination;
   }
   finally {if(stage!=null&&!committed)output("Incomplete working files retained at: "+stage,true);}

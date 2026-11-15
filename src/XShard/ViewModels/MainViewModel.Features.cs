@@ -91,14 +91,24 @@ public sealed partial class MainViewModel
  public string XeniaLibrary {get=>xeniaLibrary;set {if(Set(ref xeniaLibrary,value??""))ApplyOutputTarget();}}
  public string RetroBatRoot {get=>retroBatRoot;set {if(Set(ref retroBatRoot,value??""))ApplyOutputTarget();}}
  public string BatoceraShare {get=>batoceraShare;set {if(Set(ref batoceraShare,value??""))ApplyOutputTarget();}}
- public OutputTarget[] OutputTargets=>Enum.GetValues<OutputTarget>().Where(t=>EmulatorService.IsValidFor(t,Platform)).ToArray();
+ public OutputTarget[] OutputTargets=>Enum.GetValues<OutputTarget>().Where(t=>EmulatorService.IsValidFor(t,Platform)&&(t!=OutputTarget.XboxConsole||FtpEnabled)).ToArray();
  private OutputTarget outputTarget=OutputTarget.Custom;
- public OutputTarget OutputTarget {get=>outputTarget;set {if(!Enum.IsDefined(value))return;if(Set(ref outputTarget,value)){Changed(nameof(IsLibraryTarget));ApplyOutputTarget();}}}
+ public OutputTarget OutputTarget {get=>outputTarget;set {if(!Enum.IsDefined(value))return;if(Set(ref outputTarget,value)){Changed(nameof(IsLibraryTarget));Changed(nameof(IsConsoleTarget));ApplyOutputTarget();}}}
  public bool IsLibraryTarget=>OutputTarget!=OutputTarget.Custom;
+ public bool IsConsoleTarget=>OutputTarget==OutputTarget.XboxConsole;
  private AppSettings LibrarySettings=>new(){XemuLibrary=XemuLibrary,XeniaLibrary=XeniaLibrary,RetroBatRoot=RetroBatRoot,BatoceraShare=BatoceraShare};
  private void ApplyOutputTarget()
  {
   if(OutputTarget==OutputTarget.Custom)return;
+  if(OutputTarget==OutputTarget.XboxConsole)
+  {
+   // Results are prepared in X-Shard's transfer folder and then sent to the console; GoD is the recommended format.
+   OutputDirectory=ConsoleTransferDirectory;
+   // Console GoD keeps its padding: scrubbed/rebuilt GoD does not start for some titles.
+   if(Scrub!=ScrubMode.None){Scrub=ScrubMode.None;Message=L.T("Scrub set to None for the console (padding kept).");}
+   if(!(Mode==XisoMode.Extract||Mode==XisoMode.Convert&&Format is OutputFormat.GoD or OutputFormat.Extract or OutputFormat.ConsoleDefault))Message=L.T("For the console target choose Convert with GoD (recommended) or Extract.");
+   return;
+  }
   if(EmulatorService.LibraryFolder(OutputTarget,Platform,LibrarySettings) is {} folder)OutputDirectory=folder;
   else Message=L.T("Set the library folder for this target in Settings first.");
  }
@@ -209,13 +219,26 @@ public sealed partial class MainViewModel
  public byte[]? SelectedIcon=>SelectedJob?.Title?.IconPng;
  public bool HasTitleInfo=>SelectedJob?.Title!=null;
  public string TitleStatus=>SelectedJob==null?L.T("Select a job to inspect its source contents."):SelectedJob.Title==null?L.T("No title information found. Supported: XISO/ISO, XBE, XEX, extracted game folders and GoD (Xbox 360 name and icon only from GoD)."):"";
- private TargetPreviewInfo? preview;
- public string PreviewText=>SelectedJob==null?"":preview is {} p?string.Join(Environment.NewLine,p.Layout)+(p.Expected?Environment.NewLine+Environment.NewLine+L.T("Backend structure is expected, not guaranteed."):""):"";
+ private TargetPreviewInfo? preview;private int previewGeneration;
+ /// <summary>Target preview plus, after a console transfer, where the game is on the console.</summary>
+ public string PreviewText=>SelectedJob?.RemotePath is {Length:>0} remote?BasePreviewText+Environment.NewLine+Environment.NewLine+L.T("On the console")+": "+remote:BasePreviewText;
+ private string BasePreviewText=>SelectedJob==null?"":preview is {} p?string.Join(Environment.NewLine,p.Layout)+(p.Expected?Environment.NewLine+Environment.NewLine+L.T("Backend structure is expected, not guaranteed."):""):"";
  public string PreviewSpaceText=>preview is {} p&&SelectedJob?.Options.Mode!=XisoMode.List?$"{L.T("Estimated size")}: {RunReportService.FormatBytes(p.EstimatedBytes)} · {L.T("Free space")}: {RunReportService.FormatBytes(p.FreeBytes)}":"";
  public bool PreviewInsufficient=>preview?.InsufficientSpace==true;
  private void RefreshSelectionDetails()
  {
-  preview=SelectedJob is {} job?TargetPreview.Describe(job.Options,job.Title):null;
+  SendSelectedToConsoleCommand?.Refresh();
+  var generation=++previewGeneration;var selected=SelectedJob;
+  if(selected is {IsNetwork:true})
+  {
+   // Free space and size of network sources are read in the background: a slow or dead share must not freeze the window.
+   preview=null;
+   _=Task.Run(()=>TargetPreview.Describe(selected.Options,selected.Title)).ContinueWith(task=>
+   {
+    if(task.IsCompletedSuccessfully)Avalonia.Threading.Dispatcher.UIThread.Post(()=>{if(generation!=previewGeneration)return;preview=task.Result;foreach(var name in new[]{nameof(PreviewText),nameof(PreviewSpaceText),nameof(PreviewInsufficient)})Changed(name);});
+   },TaskScheduler.Default);
+  }
+  else preview=selected is {} job?TargetPreview.Describe(job.Options,job.Title):null;
   foreach(var name in new[]{nameof(TitleFields),nameof(SelectedIcon),nameof(HasTitleInfo),nameof(TitleStatus),nameof(PreviewText),nameof(PreviewSpaceText),nameof(PreviewInsufficient),nameof(CanLaunch)})Changed(name);
   RefreshContentFilter();
  }
@@ -231,21 +254,23 @@ public sealed partial class MainViewModel
  // ---------- persistence ----------
  private void LoadFeatureSettings(AppSettings s)
  {
+  LoadNetworkSettings(s);LoadUpdateSettings(s);
   theme=ThemeModes.Contains(s.Theme)?s.Theme:"Dark";accent=AccentNames.Contains(s.Accent)?s.Accent:"Green";
   notificationsEnabled=s.NotificationsEnabled;reportMode=ReportModes.Contains(s.ReportMode)?s.ReportMode:"Off";
   xemuPath=s.XemuPath??"";xeniaPath=s.XeniaPath??"";xemuLibrary=s.XemuLibrary??"";xeniaLibrary=s.XeniaLibrary??"";retroBatRoot=s.RetroBatRoot??"";batoceraShare=s.BatoceraShare??"";
-  outputTarget=Enum.IsDefined(s.OutputTarget)&&EmulatorService.IsValidFor(s.OutputTarget,platform)?s.OutputTarget:OutputTarget.Custom;
+  outputTarget=Enum.IsDefined(s.OutputTarget)&&EmulatorService.IsValidFor(s.OutputTarget,platform)&&(s.OutputTarget!=OutputTarget.XboxConsole||ftpEnabled)?s.OutputTarget:OutputTarget.Custom;
  }
  private void StoreFeatureSettings(AppSettings s)
  {
   s.Theme=Theme;s.Accent=Accent;s.NotificationsEnabled=NotificationsEnabled;s.ReportMode=ReportMode;
   s.XemuPath=XemuPath;s.XeniaPath=XeniaPath;s.XemuLibrary=XemuLibrary;s.XeniaLibrary=XeniaLibrary;s.RetroBatRoot=RetroBatRoot;s.BatoceraShare=BatoceraShare;s.OutputTarget=OutputTarget;
+  StoreNetworkSettings(s);StoreUpdateSettings(s);
  }
  private void ResetFeatureSettings()
  {
   Theme="Dark";Accent="Green";NotificationsEnabled=true;ReportMode="Off";AfterQueue="Nothing";CancelPowerCountdown();
   OutputTarget=OutputTarget.Custom;XemuPath="";XeniaPath="";XemuLibrary="";XeniaLibrary="";RetroBatRoot="";BatoceraShare="";
-  ClearFilter();SortMode="Added";ContentSearch="";LastReport=null;
+  ClearFilter();SortMode="Added";ContentSearch="";LastReport=null;ResetNetworkSettings();ResetUpdateSettings();
   ResetRequested?.Invoke();
  }
  /// <summary>Raised during app reset so the view can remove per-user shell registrations (context menu, toast ID).</summary>

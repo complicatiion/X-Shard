@@ -6,7 +6,7 @@ using XShard.Models;
 namespace XShard.Views;
 public sealed class ModeIconConverter : IValueConverter
 {
- public object Convert(object? value,Type targetType,object? parameter,CultureInfo culture)=>value switch {XisoMode.Extract=>"Extract",XisoMode.Create=>"Create",XisoMode.List=>"List",XisoMode.Rewrite=>"Retry",XisoMode.Convert=>"Convert",_=>"Info"};
+ public object Convert(object? value,Type targetType,object? parameter,CultureInfo culture)=>value switch {XisoMode.Extract=>"Extract",XisoMode.Create=>"Create",XisoMode.List=>"List",XisoMode.Rewrite=>"Retry",XisoMode.Convert=>"Convert",XisoMode.Upload=>"Upload",_=>"Info"};
  public object ConvertBack(object? value,Type targetType,object? parameter,CultureInfo culture)=>throw new NotSupportedException();
 }
 public sealed class EnumLabelConverter : IValueConverter
@@ -14,9 +14,9 @@ public sealed class EnumLabelConverter : IValueConverter
  public static string Label(object? value)=>XShard.Services.LocalizationService.Instance.T(value switch
  {
   ConsolePlatform.Xbox=>"Xbox Classic",ConsolePlatform.Xbox360=>"Xbox 360",
-  DeviceProfile.Custom=>"Custom",DeviceProfile.OriginalXbox=>"Xbox Classic",DeviceProfile.Xbox360=>"Xbox 360",DeviceProfile.Xemu=>"Xbox Classic · Xemu Emulator",DeviceProfile.Xenia=>"Xbox 360 · Xenia Emulator",
+  DeviceProfile.Custom=>"Custom",DeviceProfile.OriginalXbox=>"Xbox Classic",DeviceProfile.Xbox360=>"Xbox 360 · Console (RGH/JTAG)",DeviceProfile.Xemu=>"Xbox Classic · Xemu Emulator",DeviceProfile.Xenia=>"Xbox 360 · Xenia Emulator",
   OutputFormat.ConsoleDefault=>"Console preset",
-  OutputTarget.Custom=>"Custom folder",OutputTarget.XemuLibrary=>"Xemu library",OutputTarget.XeniaLibrary=>"Xenia library",OutputTarget.RetroBat=>"RetroBat",OutputTarget.Batocera=>"Batocera",
+  OutputTarget.Custom=>"Custom folder",OutputTarget.XemuLibrary=>"Xemu library",OutputTarget.XeniaLibrary=>"Xenia library",OutputTarget.RetroBat=>"RetroBat",OutputTarget.Batocera=>"Batocera",OutputTarget.XboxConsole=>"Xbox 360 console (FTP)",
   "Txt"=>"TXT report","Html"=>"HTML report","Off"=>"No automatic report","Nothing"=>"Do nothing","Hibernate"=>"Hibernate","Shutdown"=>"Shut down",
   "All"=>"All jobs","Added"=>"Order added","Name"=>"Name","Status"=>"Status","Dark"=>"Dark","Xbox"=>"Xbox","Light"=>"Light","System"=>"System","Windows"=>"Windows",
   _=>value?.ToString()??""

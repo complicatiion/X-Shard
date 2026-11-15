@@ -20,6 +20,7 @@ internal static class Program
   try{o=Options.Parse(args);}catch(ArgumentException ex){Console.Error.WriteLine("error: "+ex.Message);Console.Error.WriteLine("Run 'xshard-cli help' for usage.");return Usage;}
   quiet=o.Quiet;
   if(o.Command=="info")return Info(o);
+  if(o.Command=="scan")return await ScanAsync(o);
 
   var storage=new SettingsService();
   var legal=new LegalService(storage);
@@ -39,7 +40,7 @@ internal static class Program
   var extractXiso=XisoProcessService.FindBackend(o.ExtractXisoPath??settings.BackendPath);
   var xgdTool=XgdToolService.FindBackend(o.XgdToolPath??settings.XgdBackendPath);
 
-  var request=new JobRequest(o.Mode,o.Platform,o.Output??"",o.Format,o.Profile,o.Scrub,o.Split,o.AttachXbe,o.PatchMedia,o.RenameXbe,!o.Online,o.Advanced,!o.NoSkipSystemUpdate,o.DisableMediaPatching,o.Flatten);
+  var request=new JobRequest(o.Mode,o.Platform,o.Output??"",o.Format,o.Profile,o.Scrub,o.Split,o.AttachXbe,o.PatchMedia,o.RenameXbe,!o.Online,o.Advanced,!o.NoSkipSystemUpdate,o.DisableMediaPatching,o.Flatten,o.ToConsole,false);
   if(o.Profile!=DeviceProfile.Custom)
   {
    // Profiles are presets: explicit --format/--scrub still win.
@@ -48,21 +49,47 @@ internal static class Program
   }
   if(o.Online)Say("Online mode: XGDTool may contact Google, GitHub and XboxUnity for title data and artwork (explicitly requested with --online).");
 
-  var queue=new JobQueueService(new JobExecutor(new XisoProcessService()));
+  var executor=new JobExecutor(new XisoProcessService()){WorkDirectory=Path.Combine(storage.DataDirectory,"work")};
+  var queue=new JobQueueService(executor);
+  if(o.Mode==XisoMode.Upload||o.ToConsole)
+  {
+   var profile=settings.XboxConsole;
+   if(o.Host is {Length:>0} host)profile.Host=host;
+   if(o.FtpUser is {Length:>0} user)profile.User=user;
+   if(o.Drive is {Length:>0} drive)profile.Drive=drive;
+   if(!settings.FtpEnabled&&o.Host==null){Console.Error.WriteLine("error: console transfer (FTP) is not enabled. Enable it in X-Shard › Settings or pass --host <console IP>.");return Usage;}
+   if(string.IsNullOrWhiteSpace(profile.Host)){Console.Error.WriteLine("error: no console address. Set it in X-Shard › Settings or pass --host <console IP>.");return Usage;}
+   var password=o.FtpPassword??SecretProtector.Unprotect(profile.ProtectedPassword);
+   if(password==null){Console.Error.WriteLine("error: the saved FTP password cannot be read on this account. Pass --ftp-password.");return Usage;}
+   if(password.Length==0)password="xboxftp";
+   Say($"Console transfer: {profile.User}@{profile.Host}:{profile.Port} → /{profile.Drive} (plain FTP in the local network)");
+   queue.Uploader=(_,local,log,progress,token)=>new ConsoleTransferService(profile,password).UploadAsync(local,log,progress,token);
+  }
+  HashSet<string>? existing=null;
+  if(o.SkipExisting&&o.Mode!=XisoMode.Upload&&o.Output is {Length:>0} library&&Directory.Exists(library))
+  {
+   Say("Scanning the output folder for games that already exist …");
+   existing=LibraryScanner.Keys(await LibraryScanner.ScanAsync(library,null,CancellationToken.None));
+  }
   foreach(var source in ExpandSources(o))
   {
-   try{queue.Jobs.Add(new XisoJob{Options=JobPlanner.Plan(request,source,queue.Jobs.Select(j=>j.Options).ToList()),Status=JobStatus.Waiting});}
+   try
+   {
+    if(existing!=null&&LibraryScanner.KeyOf(TitleInfoReader.TryRead(source,o.Platform)) is {} key&&existing.Contains(key)){Say("Already in the library, skipped: "+source);continue;}
+    var active=queue.Jobs.Select(j=>j.Options).ToList();
+    queue.Jobs.Add(new XisoJob{Options=o.Mode==XisoMode.Upload?JobPlanner.PlanUpload(source,active):JobPlanner.Plan(request,source,active),Status=JobStatus.Waiting});
+   }
    catch(Exception ex) when(ex is IOException or ArgumentException or UnauthorizedAccessException){Console.Error.WriteLine($"error: {source}: {ex.Message}");if(!o.ContinueOnError)return Usage;}
   }
   if(queue.Jobs.Count==0){Console.Error.WriteLine("error: no sources to process.");return Usage;}
-  foreach(var job in queue.Jobs)
+  foreach(var job in queue.Jobs.Where(j=>j.Options.Mode!=XisoMode.Upload))
   {
    var xgd=BackendPolicy.For(job.Options)==BackendEngine.XgdTool;
    if(xgd?xgdTool==null:extractXiso==null){Console.Error.WriteLine($"error: {(xgd?"XGDTool":"extract-xiso")} backend not found. Use a complete release or pass {(xgd?"--xgdtool":"--extract-xiso")} <path>.");return NoBackend;}
   }
 
   using var cancel=new CancellationTokenSource();
-  Console.CancelKeyPress+=(_,e)=>{e.Cancel=true;if(!cancel.IsCancellationRequested){cancel.Cancel();Console.Error.WriteLine("Cancelling current job …");queue.StopAfterCurrent=true;queue.CancelCurrent();}};
+  Console.CancelKeyPress+=(_,e)=>{e.Cancel=true;if(!cancel.IsCancellationRequested){cancel.Cancel();Console.Error.WriteLine("Cancelling current job …");queue.StopAfterCurrent=true;queue.CancelAll();}};
   var started=DateTimeOffset.UtcNow;var gate=new object();
   queue.Changed+=()=>
   {
@@ -75,7 +102,7 @@ internal static class Program
   },()=>Task.CompletedTask);
 
   foreach(var job in queue.Jobs)
-   Console.WriteLine($"{(job.Status==JobStatus.Succeeded?"OK  ":job.Status==JobStatus.Waiting?"SKIP":"FAIL")} {job.Name} — {job.Result}{(job.PublishedPath is {Length:>0} p?" → "+p:"")}");
+   Console.WriteLine($"{(job.Status==JobStatus.Succeeded?"OK  ":job.Status==JobStatus.Waiting?"SKIP":"FAIL")} {job.Name} — {job.Result}{(job.PublishedPath is {Length:>0} p?" → "+p:"")}{(job.RemotePath is {Length:>0} remote?" → console "+remote:"")}");
   if(o.Report is {Length:>0} reportPath)
   {
    var report=RunReportService.Build(started,DateTimeOffset.UtcNow,queue.Jobs.Where(j=>j.Status!=JobStatus.Waiting),Version);
@@ -93,13 +120,30 @@ internal static class Program
   foreach(var raw in o.Sources)
   {
    var full=Path.GetFullPath(raw);
-   if(Directory.Exists(full)&&o.Mode!=XisoMode.Create&&!o.GameFolder)
+   if(Directory.Exists(full)&&o.Mode is not (XisoMode.Create or XisoMode.Upload)&&!o.GameFolder)
    {
     var images=FolderBatchService.EnumerateImages(full,o.Recursive,JobPlanner.UsesXgd(o.Mode,o.Platform,o.Profile,o.Advanced),CancellationToken.None);
     if(images.Count>0){foreach(var image in images)yield return image;continue;}
    }
    yield return full;
   }
+ }
+
+ /// <summary>Lists the games in a library folder (ISO, GoD, extracted) with Title ID, Media ID and disc.</summary>
+ private static async Task<int> ScanAsync(Options o)
+ {
+  var exit=Ok;
+  foreach(var folder in o.Sources)
+  {
+   var full=Path.GetFullPath(NetworkPath.ToUniversal(folder));
+   if(!Directory.Exists(full)){Console.Error.WriteLine("error: folder not found: "+full);exit=JobFailed;continue;}
+   var entries=await LibraryScanner.ScanAsync(full,quiet?null:text=>Console.Error.WriteLine(text),CancellationToken.None);
+   foreach(var entry in entries.OrderBy(e=>e.DisplayName,StringComparer.OrdinalIgnoreCase))
+    Console.WriteLine($"{entry.Kind,-9} {entry.Title?.TitleIdHex??"--------"} {entry.Title?.MediaIdHex??"--------"} {entry.Title?.Disc??1} {entry.DisplayName}{(entry.ProbablyScrubbed?" [scrubbed?]":"")}\t{entry.Path}");
+   var duplicates=entries.Where(e=>e.Key!=null).GroupBy(e=>e.Key).Where(g=>g.Count()>1).ToList();
+   Say($"{entries.Count} games ({entries.Count(e=>e.Kind==LibraryKind.Image)} images, {entries.Count(e=>e.Kind==LibraryKind.GoD)} GoD, {entries.Count(e=>e.Kind==LibraryKind.Extracted)} extracted), {duplicates.Count} titles in more than one format, {entries.Count(e=>e.ProbablyScrubbed)} GoD probably scrubbed (rebuild from the ISO with Scrub None if a title does not start on the console).");
+  }
+  return exit;
  }
 
  private static int Info(Options o)
@@ -138,6 +182,8 @@ internal static class Program
     rewrite     Rewrite a working copy (the original is kept)
     convert     Convert to another format (--format)
     info        Show title information (Title ID, name, region, …)
+    scan        List the games in a library folder (ISO, GoD, extracted; also network shares)
+    send        Send GoD or extracted Xbox 360 game folders to the console via FTP
     help | version
 
   Options
@@ -159,7 +205,12 @@ internal static class Program
         --icon-dir <folder>           info: save title icons as PNG
         --extract-xiso <path>  --xgdtool <path>   Backend overrides
         --accept-eula                 Accept the X-Shard legal documents (folder 'legal')
+        --skip-existing               Skip sources whose game already exists in the output folder (any format)
+        --to-console                  Xbox 360: send each result to the console via FTP (GoD or extract)
+        --host <ip>  --ftp-user <name>  --ftp-password <pw>  --drive <Hdd1|Usb0>   Console overrides (default: Settings)
     -q, --quiet                       Only results and errors
+
+  Network shares (\\server\share or mapped drives) work as sources and outputs; interrupted connections are resumed.
 
   Exit codes: 0 ok, 1 job failed, 2 usage, 3 legal not accepted, 4 backend missing, 130 cancelled
   """);
@@ -169,12 +220,12 @@ internal static class Program
  {
   public string Command="";public XisoMode Mode;public ConsolePlatform Platform=ConsolePlatform.Xbox;public string? Output;
   public OutputFormat Format=OutputFormat.XISO;public bool FormatGiven;public DeviceProfile Profile=DeviceProfile.Custom;public ScrubMode Scrub=ScrubMode.None;public bool ScrubGiven;
-  public bool Split,AttachXbe,PatchMedia,RenameXbe,Advanced,NoSkipSystemUpdate,DisableMediaPatching,Flatten,Online,Recursive,GameFolder,ContinueOnError,AcceptEula,Quiet;
-  public string? Report,IconFolder,ExtractXisoPath,XgdToolPath;public List<string> Sources=[];
+  public bool Split,AttachXbe,PatchMedia,RenameXbe,Advanced,NoSkipSystemUpdate,DisableMediaPatching,Flatten,Online,Recursive,GameFolder,ContinueOnError,AcceptEula,Quiet,SkipExisting,ToConsole;
+  public string? Report,IconFolder,ExtractXisoPath,XgdToolPath,Host,FtpUser,FtpPassword,Drive;public List<string> Sources=[];
   public static Options Parse(string[] args)
   {
    var o=new Options{Command=args[0].ToLowerInvariant()};
-   o.Mode=o.Command switch {"extract"=>XisoMode.Extract,"create"=>XisoMode.Create,"list"=>XisoMode.List,"rewrite"=>XisoMode.Rewrite,"convert"=>XisoMode.Convert,"info"=>XisoMode.List,_=>throw new ArgumentException("unknown command: "+args[0])};
+   o.Mode=o.Command switch {"extract"=>XisoMode.Extract,"create"=>XisoMode.Create,"list"=>XisoMode.List,"rewrite"=>XisoMode.Rewrite,"convert"=>XisoMode.Convert,"info" or "scan"=>XisoMode.List,"send"=>XisoMode.Upload,_=>throw new ArgumentException("unknown command: "+args[0])};
    for(var i=1;i<args.Length;i++)
    {
     var a=args[i];
@@ -204,6 +255,12 @@ internal static class Program
      case "--xgdtool":o.XgdToolPath=Next();break;
      case "--accept-eula":o.AcceptEula=true;break;
      case "-q" or "--quiet":o.Quiet=true;break;
+     case "--skip-existing":o.SkipExisting=true;break;
+     case "--to-console":o.ToConsole=true;break;
+     case "--host":o.Host=Next();break;
+     case "--ftp-user":o.FtpUser=Next();break;
+     case "--ftp-password":o.FtpPassword=Next();break;
+     case "--drive":o.Drive=Next();break;
      default:
       if(a.StartsWith('-')&&a.Length>1)throw new ArgumentException("unknown option: "+a);
       o.Sources.Add(a);break;
@@ -212,7 +269,8 @@ internal static class Program
    if(o.Sources.Count==0)throw new ArgumentException("no source given.");
    if(o.Profile is DeviceProfile.OriginalXbox or DeviceProfile.Xemu&&o.Platform!=ConsolePlatform.Xbox||o.Profile is DeviceProfile.Xbox360 or DeviceProfile.Xenia&&o.Platform!=ConsolePlatform.Xbox360)
     throw new ArgumentException("the profile does not match the console (use --console).");
-   if(o.Command!="info"&&o.Mode!=XisoMode.List&&string.IsNullOrWhiteSpace(o.Output))throw new ArgumentException("--output is required for "+o.Command+".");
+   if(o.Command is not ("info" or "scan")&&JobPlanner.IsWriting(o.Mode)&&string.IsNullOrWhiteSpace(o.Output))throw new ArgumentException("--output is required for "+o.Command+".");
+   if(o.Command=="send")o.Platform=ConsolePlatform.Xbox360;
    if(o.Mode==XisoMode.Convert&&!o.FormatGiven&&o.Profile==DeviceProfile.Custom)throw new ArgumentException("--format is required for convert.");
    return o;
   }

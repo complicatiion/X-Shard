@@ -21,3 +21,19 @@ public sealed class AsyncRelayCommand(Func<Task> action, Action<Exception> onErr
  public event EventHandler? CanExecuteChanged;
  public void Refresh() => CanExecuteChanged?.Invoke(this,EventArgs.Empty);
 }
+/// <summary>Async command with a parameter (e.g. the emulator id from CommandParameter).</summary>
+public sealed class AsyncRelayCommand<T>(Func<T?,Task> action, Action<Exception> onError, Func<T?,bool>? canExecute=null) : ICommand
+{
+ private bool running;
+ private static T? Convert(object? parameter)=>parameter is T value?value:default;
+ public bool CanExecute(object? parameter) => !running && (canExecute?.Invoke(Convert(parameter)) ?? true);
+ public async void Execute(object? parameter)
+ {
+  if(!CanExecute(parameter)) return;
+  running=true; Refresh();
+  try { await action(Convert(parameter)); } catch(Exception ex) { onError(ex); }
+  finally { running=false; Refresh(); }
+ }
+ public event EventHandler? CanExecuteChanged;
+ public void Refresh() => CanExecuteChanged?.Invoke(this,EventArgs.Empty);
+}

@@ -25,7 +25,7 @@ public sealed class AppSettings
  public bool ContinueOnError { get; set; } = true;
  /// <summary>Revision of default values last written. Older files get new defaults applied once: 1 = Skip $SystemUpdate on (v0.1.7), 2 = former "Dark" (green) becomes "Xbox" (v0.1.9).</summary>
  public int DefaultsRevision { get; set; }
- public const int CurrentDefaultsRevision = 3;
+ public const int CurrentDefaultsRevision = 4;
  // v0.1.8
  /// <summary>Dark (Windows 11 Mica gray), Xbox (green dark), Light or System.</summary>
  public string Theme { get; set; } = "Dark";
@@ -41,5 +41,20 @@ public sealed class AppSettings
  public string RetroBatRoot { get; set; } = "";
  public string BatoceraShare { get; set; } = "";
  public OutputTarget OutputTarget { get; set; } = OutputTarget.Custom;
+ // v0.2.0
+ /// <summary>FTP transfer to an Xbox 360 console (Aurora/FSD FTP server). Off by default; must be switched on in Settings.</summary>
+ public bool FtpEnabled { get; set; }
+ public ConsoleProfile XboxConsole { get; set; } = new();
+ // v0.2.2
+ /// <summary>Skip sources whose game already exists in the output folder (probably scrubbed GoD packages do not count).</summary>
+ public bool SkipExistingGames { get; set; } = true;
+ /// <summary>The user agreed once that X-Shard may ask GitHub for the latest X-Shard release.</summary>
+ public bool UpdateConsent { get; set; }
+ /// <summary>Check for updates at start (at most once per 24 hours). Off by default; requires <see cref="UpdateConsent"/>.</summary>
+ public bool UpdateAutoCheck { get; set; }
+ /// <summary>Show a Windows notification and a badge when a newer release exists.</summary>
+ public bool UpdateNotify { get; set; } = true;
+ public DateTimeOffset? LastUpdateCheck { get; set; }
+ public string LatestRelease { get; set; } = "";
 }
-public sealed record SavedJob(Guid Id, XisoJobOptions Options, JobStatus Status, string Result, string? PublishedPath = null);
+public sealed record SavedJob(Guid Id, XisoJobOptions Options, JobStatus Status, string Result, string? PublishedPath = null, string? RemotePath = null);

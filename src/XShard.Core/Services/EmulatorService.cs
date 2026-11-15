@@ -19,7 +19,7 @@ public static class EmulatorService
   };
  }
  private static string? Blank(string value)=>string.IsNullOrWhiteSpace(value)?null:value.Trim();
- public static bool IsValidFor(OutputTarget target,ConsolePlatform platform)=>target switch {OutputTarget.XemuLibrary=>platform==ConsolePlatform.Xbox,OutputTarget.XeniaLibrary=>platform==ConsolePlatform.Xbox360,_=>true};
+ public static bool IsValidFor(OutputTarget target,ConsolePlatform platform)=>target switch {OutputTarget.XemuLibrary=>platform==ConsolePlatform.Xbox,OutputTarget.XeniaLibrary or OutputTarget.XboxConsole=>platform==ConsolePlatform.Xbox360,_=>true};
  /// <summary>Finds a bootable file for the emulator: the published result if available, otherwise the source.</summary>
  public static string? FindLaunchTarget(XisoJob job)
  {

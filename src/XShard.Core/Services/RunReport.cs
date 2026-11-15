@@ -19,8 +19,8 @@ public static class RunReportService
 {
  public static RunReport Build(DateTimeOffset started,DateTimeOffset finished,IEnumerable<XisoJob> jobs,string version)
  {
-  var entries=jobs.Select(job=>new RunReportEntry(job.Name,job.Options.Mode.ToString(),job.PlatformText,job.Status.ToString(),job.Result,job.Options.Source,
-   job.PublishedPath??job.Options.Destination,job.Duration??TimeSpan.Zero,MeasureSource(job.Options),
+  var entries=jobs.Select(job=>new RunReportEntry(job.Name,job.Options.Mode+" · "+JobPlanner.OutputSummary(job.Options),job.PlatformText,job.Status.ToString(),job.Result,job.Options.Source,
+   job.RemotePath is {Length:>0} remote?"Console (FTP): "+remote:job.PublishedPath??job.Options.Destination,job.Duration??TimeSpan.Zero,MeasureSource(job.Options),
    job.Status==JobStatus.Succeeded&&job.Options.Mode!=XisoMode.List?Measure(job.PublishedPath??job.Options.Destination):null,
    job.Title?.Summary is {Length:>0} t?t:null)).ToList();
   return new RunReport(started,finished,version,entries);

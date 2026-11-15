@@ -46,7 +46,11 @@ public sealed class AppIcon : Control
   ["Export"] = Geometry.Parse("M12,15 V3 M7,8 L12,3 L17,8 M4,14 V21 H20 V14"),
   ["Check"] = Geometry.Parse("M4,12 L9,17 L20,6"),
   ["Pause"] = Geometry.Parse("M8,5 V19 M16,5 V19"),
-  ["Chevron"] = Geometry.Parse("M8,5 L15,12 L8,19")
+  ["Chevron"] = Geometry.Parse("M8,5 L15,12 L8,19"),
+  ["Upload"] = Geometry.Parse("M4,17 H20 V21 H4 Z M12,14 V3 M7,8 L12,3 L17,8 M17,19 V19.1"),
+  ["Download"] = Geometry.Parse("M4,17 H20 V21 H4 Z M12,3 V14 M7,9 L12,14 L17,9"),
+  ["Update"] = Geometry.Parse("M20,12 A8,8 0 1 1 17.7,6.3 M20,4 V9 H15"),
+  ["Network"] = Geometry.Parse("M9,3 H15 V8 H9 Z M12,8 V12 M5,12 H19 M5,12 V16 M19,12 V16 M2,16 H8 V21 H2 Z M16,16 H22 V21 H16 Z")
  };
  static AppIcon() { AffectsRender<AppIcon>(KindProperty,StrokeProperty); }
  public AppIcon() { Width=20;Height=20;IsHitTestVisible=false; }

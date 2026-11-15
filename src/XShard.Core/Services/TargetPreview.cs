@@ -12,6 +12,7 @@ public static class TargetPreview
  public static TargetPreviewInfo Describe(XisoJobOptions o,TitleInfo? title=null)
  {
   if(o.Mode==XisoMode.List)return new("",["No files are written (List)."],0,null,false);
+  if(o.Mode==XisoMode.Upload)return new("",["Sent to the console via FTP:","   GoD → /Hdd1/Content/0000000000000000/<TitleID>/00007000/…","   Extracted → /Hdd1/Games/<name>/","The source folder is not changed."],RunReportService.MeasureSource(o),null,true);
   var d=o.Destination;var name=Path.GetFileNameWithoutExtension(o.Source);var lines=new List<string>();var expected=false;
   var options=BackendPolicy.Normalize(o);
   if(options.Engine==BackendEngine.ExtractXiso)
@@ -44,6 +45,10 @@ public static class TargetPreview
     }
    }
   }
+  lines.Add("Output: "+JobPlanner.OutputSummary(o));
+  if(JobPlanner.ConsoleScrubWarning(o) is {} warning)lines.Add("⚠ "+warning);
+  if(NetworkPath.IsNetwork(d))lines.Add("Network share: interrupted connections are resumed; extracted files are prepared locally first.");
+  if(o.UploadToConsole)lines.Add("Then sent to the console via FTP"+(o.DeleteAfterUpload?" (local transfer copy deleted afterwards).":"."));
   var estimate=RunReportService.MeasureSource(o);
   return new(d,lines,estimate,FreeBytes(Path.GetDirectoryName(d)??d),expected);
  }

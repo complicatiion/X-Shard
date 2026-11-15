@@ -21,7 +21,11 @@
        </StackPanel>
       </Border>
       <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-       <Button x:Name="SettingsButton" Classes="icon" Click="Settings_Click" ToolTip.Tip="{v:Tr Key=settings}" AutomationProperties.Name="{v:Tr Key=settings}"><v:AppIcon Kind="Settings"/></Button>
+       <Panel>
+        <Button x:Name="SettingsButton" Classes="icon" Click="Settings_Click" ToolTip.Tip="{v:Tr Key=settings}" AutomationProperties.Name="{v:Tr Key=settings}"><v:AppIcon Kind="Settings"/></Button>
+        <!-- v0.2.2: a newer X-Shard release is available -->
+        <Ellipse x:Name="UpdateBadge" Width="10" Height="10" Fill="{DynamicResource XsAccent}" Stroke="{DynamicResource XsCardBg}" StrokeThickness="2" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,3,3,0" IsHitTestVisible="False" IsVisible="{Binding ShowUpdateBadge}" ToolTip.Tip="{v:Tr Key=update_available}"/>
+       </Panel>
        <Button Classes="icon" Click="About_Click" ToolTip.Tip="{v:Tr Key=about_x_shard}" AutomationProperties.Name="{v:Tr Key=about_x_shard}"><v:AppIcon Kind="Info"/></Button>
       </StackPanel>
      </Grid>
@@ -52,7 +56,11 @@
           <Button Grid.Column="3" Width="220" VerticalAlignment="Bottom" Classes="positive" HorizontalContentAlignment="Center" Click="Add_Click"><StackPanel Orientation="Horizontal" Spacing="8"><v:AppIcon Kind="Plus"/><TextBlock Text="{Binding AddLabel}"/></StackPanel></Button>
          </Grid>
          <Grid ColumnDefinitions="*,Auto,220" ColumnSpacing="12" IsVisible="{Binding IsWriting}">
-          <TextBox Text="{Binding OutputDirectory}" Watermark="{v:Tr Key=choose_an_output_folder}" IsReadOnly="{Binding IsLibraryTarget}"/>
+          <Panel>
+           <TextBox Text="{Binding OutputDirectory}" Watermark="{v:Tr Key=choose_an_output_folder}" IsReadOnly="{Binding IsLibraryTarget}" IsVisible="{Binding !IsConsoleTarget}"/>
+           <!-- v0.2.2: console target shows the console, the transfer folder only as tooltip -->
+           <Border x:Name="ConsoleTargetPill" Classes="pill" MinHeight="42" Padding="12,0" IsVisible="{Binding IsConsoleTarget}" ToolTip.Tip="{Binding ConsoleTransferDirectory}"><StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center"><v:AppIcon Kind="Upload" Width="16" Height="16"/><TextBlock Text="{Binding ConsoleTargetText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/></StackPanel></Border>
+          </Panel>
           <ComboBox Grid.Column="1" Width="200" ItemsSource="{Binding OutputTargets}" SelectedItem="{Binding OutputTarget}" ToolTip.Tip="{v:Tr Key=output_target_tip}">
            <ComboBox.ItemTemplate><DataTemplate x:DataType="m:OutputTarget"><TextBlock Text="{Binding ., Converter={StaticResource EnumLabel}}"/></DataTemplate></ComboBox.ItemTemplate>
           </ComboBox>
@@ -60,11 +68,17 @@
          </Grid>
          <Grid ColumnDefinitions="*,220" ColumnSpacing="12">
           <WrapPanel Orientation="Horizontal">
-           <CheckBox Content="{v:Tr Key=skip_systemupdate}" IsVisible="{Binding !UsesXgd}" IsChecked="{Binding SkipSystemUpdate}" IsEnabled="{Binding SupportsSkip}" Margin="0,0,12,0"/>
-           <CheckBox Content="{v:Tr Key=disable_xbe_media_patching}" IsVisible="{Binding !UsesXgd}" IsChecked="{Binding DisableMediaPatching}" IsEnabled="{Binding SupportsPatching}" Margin="0,0,12,0"/>
-           <CheckBox Content="{v:Tr Key=advanced_xgd_options}" IsChecked="{Binding Advanced}" Margin="0,0,12,0"/>
+           <!-- v0.2.2: switches with the label on the right -->
+           <ToggleSwitch Classes="inline" OnContent="{v:Tr Key=skip_systemupdate}" OffContent="{v:Tr Key=skip_systemupdate}" IsVisible="{Binding !UsesXgd}" IsChecked="{Binding SkipSystemUpdate}" IsEnabled="{Binding SupportsSkip}" Margin="0,0,18,0"/>
+           <ToggleSwitch Classes="inline" OnContent="{v:Tr Key=disable_xbe_media_patching}" OffContent="{v:Tr Key=disable_xbe_media_patching}" IsVisible="{Binding !UsesXgd}" IsChecked="{Binding DisableMediaPatching}" IsEnabled="{Binding SupportsPatching}" Margin="0,0,18,0"/>
+           <ToggleSwitch x:Name="AdvancedSwitch" Classes="inline" OnContent="{v:Tr Key=advanced_xgd_options}" OffContent="{v:Tr Key=advanced_xgd_options}" IsChecked="{Binding Advanced}" Margin="0,0,18,0"/>
            <Button Classes="positive" IsEnabled="{Binding CanBatchImages}" Click="BatchFolder_Click" Margin="0,0,10,0"><StackPanel Orientation="Horizontal" Spacing="8"><v:AppIcon Kind="FolderPlus"/><TextBlock Text="{v:Tr Key=add_iso_folder}"/></StackPanel></Button>
-           <Button IsVisible="{Binding UsesXgd}" Click="GameFolder_Click"><StackPanel Orientation="Horizontal" Spacing="8"><v:AppIcon Kind="Plus"/><TextBlock Text="{v:Tr Key=add_game_folder}"/></StackPanel></Button>
+           <Button IsVisible="{Binding UsesXgd}" Click="GameFolder_Click" Margin="0,0,10,0"><StackPanel Orientation="Horizontal" Spacing="8"><v:AppIcon Kind="Plus"/><TextBlock Text="{v:Tr Key=add_game_folder}"/></StackPanel></Button>
+           <Button x:Name="SendToConsoleButton" IsVisible="{Binding CanSendToConsole}" Click="SendToConsole_Click" ToolTip.Tip="{v:Tr Key=send_to_console_tip}" Margin="0,0,10,0"><StackPanel Orientation="Horizontal" Spacing="8"><v:AppIcon Kind="Upload"/><TextBlock Text="{v:Tr Key=send_to_console}"/></StackPanel></Button>
+           <StackPanel x:Name="AddingPanel" Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsAdding}" VerticalAlignment="Center">
+            <TextBlock Text="{Binding AddingStatus}" VerticalAlignment="Center" FontSize="12" Classes="muted" MaxWidth="320" TextTrimming="CharacterEllipsis"/>
+            <Button Classes="icon negative" Command="{Binding CancelAddCommand}" ToolTip.Tip="{v:Tr Key=cancel}"><v:AppIcon Kind="Cancel"/></Button>
+           </StackPanel>
           </WrapPanel>
           <Border x:Name="OutputRequiredIndicator" Grid.Column="1" CornerRadius="10" Padding="13,9" Height="40" Background="{DynamicResource XsSurfaceAlt}" IsVisible="{Binding NeedsOutput}" VerticalAlignment="Top"><TextBlock Text="{v:Tr Key=choose_an_output_folder_first}" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
          </Grid>
@@ -72,7 +86,7 @@
           <StackPanel Spacing="10">
            <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
             <StackPanel Spacing="5"><TextBlock Text="{v:Tr Key=output_format_convert}"/><ComboBox ItemsSource="{Binding Formats}" SelectedItem="{Binding Format}" IsEnabled="{Binding ShowFormat}" HorizontalAlignment="Stretch"><ComboBox.ItemTemplate><DataTemplate x:DataType="m:OutputFormat"><TextBlock Text="{Binding ., Converter={StaticResource EnumLabel}}"/></DataTemplate></ComboBox.ItemTemplate></ComboBox></StackPanel>
-            <StackPanel Grid.Column="1" Spacing="5"><TextBlock Text="{v:Tr Key=scrub_rewrite_always_full}"/><ComboBox ItemsSource="{Binding ScrubModes}" SelectedItem="{Binding Scrub}" IsEnabled="{Binding CanScrub}" HorizontalAlignment="Stretch"><ComboBox.ItemTemplate><DataTemplate x:DataType="m:ScrubMode"><TextBlock Text="{Binding ., Converter={StaticResource EnumLabel}}"/></DataTemplate></ComboBox.ItemTemplate></ComboBox></StackPanel>
+            <StackPanel Grid.Column="1" Spacing="5"><TextBlock Text="{v:Tr Key=scrub}"/><ComboBox x:Name="ScrubCombo" ItemsSource="{Binding ScrubModes}" SelectedItem="{Binding Scrub}" IsEnabled="{Binding CanScrub}" HorizontalAlignment="Stretch" ToolTip.Tip="{v:Tr Key=scrub_tooltip}"><ComboBox.ItemTemplate><DataTemplate x:DataType="m:ScrubMode"><TextBlock Text="{Binding ., Converter={StaticResource EnumLabel}}"/></DataTemplate></ComboBox.ItemTemplate></ComboBox></StackPanel>
            </Grid>
            <WrapPanel>
             <CheckBox Content="{v:Tr Key=split_xiso}" IsChecked="{Binding Split}" IsEnabled="{Binding CanSplit}" Margin="0,0,20,0"/>
@@ -139,7 +153,7 @@
                <Border Grid.Column="1" Classes="pill"><TextBlock Text="{Binding PlatformText}" FontSize="11" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis"/></Border>
                <Border Grid.Column="2" Classes="pill" Background="{Binding ResultBackground}" ToolTip.Tip="{Binding Result}"><TextBlock Text="{Binding ResultLabel}" Foreground="#EEF2ED" HorizontalAlignment="Center" FontSize="11" TextTrimming="CharacterEllipsis"/></Border>
               </Grid>
-              <Border Grid.Row="1" Grid.Column="1" Classes="pill" VerticalAlignment="Center" ToolTip.Tip="{Binding Options.Source}"><TextBlock Text="{Binding Options.Source}" FontSize="11" TextTrimming="CharacterEllipsis"/></Border>
+              <Border Grid.Row="1" Grid.Column="1" Classes="pill" VerticalAlignment="Center" ToolTip.Tip="{Binding Options.Source}"><Grid ColumnDefinitions="Auto,*" ColumnSpacing="6"><v:AppIcon Kind="Network" Width="14" Height="14" VerticalAlignment="Center" Opacity="0.8" IsVisible="{Binding IsNetwork}"/><TextBlock Grid.Column="1" Text="{Binding Options.Source}" FontSize="11" TextTrimming="CharacterEllipsis"/></Grid></Border>
               <Grid Grid.Row="1" Grid.Column="2" ColumnDefinitions="*,*,*" ColumnSpacing="8">
                <Border Classes="pill" Background="{Binding StatusBackground}" VerticalAlignment="Center"><TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusColor}" HorizontalAlignment="Center" FontSize="11" TextTrimming="CharacterEllipsis"/></Border>
                <Border Grid.Column="1" Classes="pill" VerticalAlignment="Center"><TextBlock Text="{Binding Elapsed}" HorizontalAlignment="Center" FontSize="11"/></Border>
@@ -222,14 +236,57 @@
           <TextBlock Text="{v:Tr Key=batocera_share}" Classes="label"/>
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8"><TextBox Text="{Binding BatoceraShare}" Watermark="\\BATOCERA\share"/><Button Grid.Column="1" Classes="icon positive" Tag="BatoceraShare" Click="BrowseSetting_Click" ToolTip.Tip="{v:Tr Key=browse}"><v:AppIcon Kind="Folder"/></Button></Grid>
           <TextBlock Text="{v:Tr Key=library_note}" FontSize="11" TextWrapping="Wrap" Classes="muted"/>
-         </StackPanel></Border>
-         <Border Classes="card" Padding="14"><StackPanel Spacing="10">
-          <TextBlock Text="{v:Tr Key=settings_and_queue_location}" FontWeight="SemiBold"/>
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8"><Border x:Name="DataLocationPill" Classes="pill" MinHeight="42" VerticalAlignment="Stretch"><TextBlock x:Name="DataLocationText" Text="{Binding DataDirectory}" TextWrapping="Wrap" FontSize="12" VerticalAlignment="Center"/></Border><Button x:Name="DataLocationButton" Grid.Column="1" Classes="icon positive" VerticalAlignment="Center" Click="DataLocation_Click" IsEnabled="{Binding CanChangeDataLocation}" ToolTip.Tip="{v:Tr Key=choose_settings_location}"><v:AppIcon Kind="Folder"/></Button></Grid>
-          <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-           <Button x:Name="OpenLogsButton" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Click="OpenLogs_Click"><StackPanel Orientation="Horizontal" Spacing="8"><v:AppIcon Kind="Folder"/><TextBlock Text="{v:Tr Key=open_log_folder}" TextTrimming="CharacterEllipsis"/></StackPanel></Button>
-           <Button x:Name="OpenReportsButton" Grid.Column="1" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Click="OpenReports_Click"><StackPanel Orientation="Horizontal" Spacing="8"><v:AppIcon Kind="Report"/><TextBlock Text="{v:Tr Key=open_reports_folder}" TextTrimming="CharacterEllipsis"/></StackPanel></Button>
+          <!-- v0.2.2: opt-in emulator downloads from the official GitHub releases (nothing is bundled) -->
+          <Separator Margin="0,4"/>
+          <TextBlock Text="{v:Tr Key=download_emulators}" FontWeight="SemiBold"/>
+          <Border Classes="pill" Padding="10,8"><TextBlock Text="{v:Tr Key=emulator_download_note}" FontSize="11" TextWrapping="Wrap"/></Border>
+          <Grid x:Name="XeniaDownloadRow" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+           <StackPanel VerticalAlignment="Center"><TextBlock Text="Xenia Canary · BSD-3-Clause" FontWeight="SemiBold"/><TextBlock Text="{Binding XeniaState}" FontSize="11" Classes="muted"/></StackPanel>
+           <Button Grid.Column="1" Classes="positive" Command="{Binding DownloadEmulatorCommand}" CommandParameter="xenia"><StackPanel Orientation="Horizontal" Spacing="8"><v:AppIcon Kind="Download"/><TextBlock Text="{v:Tr Key=download_update}"/></StackPanel></Button>
+           <Button Grid.Column="2" Classes="icon" Tag="xenia" Click="OpenEmulatorFolder_Click" ToolTip.Tip="{v:Tr Key=open_folder}"><v:AppIcon Kind="Folder"/></Button>
           </Grid>
+          <Grid x:Name="XemuDownloadRow" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+           <StackPanel VerticalAlignment="Center"><TextBlock Text="xemu · GPL-2.0" FontWeight="SemiBold"/><TextBlock Text="{Binding XemuState}" FontSize="11" Classes="muted"/></StackPanel>
+           <Button Grid.Column="1" Classes="positive" Command="{Binding DownloadEmulatorCommand}" CommandParameter="xemu"><StackPanel Orientation="Horizontal" Spacing="8"><v:AppIcon Kind="Download"/><TextBlock Text="{v:Tr Key=download_update}"/></StackPanel></Button>
+           <Button Grid.Column="2" Classes="icon" Tag="xemu" Click="OpenEmulatorFolder_Click" ToolTip.Tip="{v:Tr Key=open_folder}"><v:AppIcon Kind="Folder"/></Button>
+          </Grid>
+          <Button x:Name="XemuSystemButton" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Tag="xemu-system" Click="OpenEmulatorFolder_Click"><StackPanel Orientation="Horizontal" Spacing="8"><v:AppIcon Kind="Folder"/><TextBlock Text="{v:Tr Key=open_xemu_system_files_folder}"/></StackPanel></Button>
+          <TextBlock Text="{v:Tr Key=xemu_system_files_note}" FontSize="11" TextWrapping="Wrap" Classes="muted"/>
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" IsVisible="{Binding EmulatorBusy}">
+           <ProgressBar Value="{Binding EmulatorProgress}" Maximum="100" Height="6" VerticalAlignment="Center"/>
+           <Button Grid.Column="1" Classes="icon negative" Command="{Binding CancelEmulatorCommand}" ToolTip.Tip="{v:Tr Key=cancel}"><v:AppIcon Kind="Cancel"/></Button>
+          </Grid>
+          <TextBlock Text="{Binding EmulatorMessage}" FontSize="11" TextWrapping="Wrap" IsVisible="{Binding EmulatorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+         </StackPanel></Border>
+         <!-- v0.2.0: FTP transfer to an Xbox 360 console (Aurora/FSD). Off by default. -->
+         <Border x:Name="ConsoleFtpCard" Classes="card" Padding="14"><StackPanel Spacing="8">
+          <StackPanel Orientation="Horizontal" Spacing="8"><v:AppIcon Kind="Upload" Width="18" Height="18"/><TextBlock Text="{v:Tr Key=xbox_360_console_ftp}" Classes="section"/></StackPanel>
+          <CheckBox x:Name="FtpEnabledCheck" Content="{v:Tr Key=enable_console_transfer}" IsChecked="{Binding FtpEnabled}"/>
+          <Border Classes="pill" Padding="10,8"><TextBlock Text="{v:Tr Key=ftp_aurora_note}" FontSize="11" TextWrapping="Wrap"/></Border>
+          <StackPanel x:Name="ConsoleFtpFields" Spacing="8" IsEnabled="{Binding FtpEnabled}">
+           <Grid ColumnDefinitions="*,96" ColumnSpacing="8">
+            <StackPanel Spacing="4"><TextBlock Text="{v:Tr Key=console_ip_address}" Classes="label"/><TextBox Text="{Binding ConsoleHost}" Watermark="192.168.1.50"/></StackPanel>
+            <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="{v:Tr Key=port}" Classes="label"/><TextBox Text="{Binding ConsolePortText}" Watermark="21"/></StackPanel>
+           </Grid>
+           <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+            <StackPanel Spacing="4"><TextBlock Text="{v:Tr Key=user_name}" Classes="label"/><TextBox Text="{Binding ConsoleUser}" Watermark="xboxftp"/></StackPanel>
+            <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="{v:Tr Key=password}" Classes="label"/><TextBox Text="{Binding ConsolePassword}" PasswordChar="•" Watermark="xboxftp"/></StackPanel>
+           </Grid>
+           <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+            <StackPanel Spacing="4"><TextBlock Text="{v:Tr Key=console_drive}" Classes="label"/><ComboBox ItemsSource="{Binding ConsoleDrives}" SelectedItem="{Binding ConsoleDrive}" HorizontalAlignment="Stretch"/></StackPanel>
+            <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="{v:Tr Key=folder_for_extracted_games}" Classes="label"/><TextBox Text="{Binding ConsoleGamesFolder}" Watermark="Games"/></StackPanel>
+           </Grid>
+           <TextBlock Text="{Binding ConsolePortError}" Foreground="{DynamicResource XsNegativeText}" FontSize="11" IsVisible="{Binding HasConsolePortError}"/>
+           <CheckBox Content="{v:Tr Key=delete_transfer_copy}" IsChecked="{Binding DeleteTransferCopy}"/>
+           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <TextBlock Text="{Binding TransferFolderSize}" FontSize="11" Classes="muted" VerticalAlignment="Center" TextWrapping="Wrap" ToolTip.Tip="{Binding ConsoleTransferDirectory}"/>
+            <Button Grid.Column="1" Classes="negative" Command="{Binding CleanTransferCommand}"><StackPanel Orientation="Horizontal" Spacing="8"><v:AppIcon Kind="Trash"/><TextBlock Text="{v:Tr Key=clean_up}"/></StackPanel></Button>
+           </Grid>
+           <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+            <Button x:Name="TestConsoleButton" Classes="positive" Command="{Binding TestConsoleCommand}"><StackPanel Orientation="Horizontal" Spacing="8"><v:AppIcon Kind="Test"/><TextBlock Text="{v:Tr Key=test_connection}"/></StackPanel></Button>
+            <TextBlock Grid.Column="1" Text="{Binding ConsoleTestState}" TextWrapping="Wrap" FontSize="11" VerticalAlignment="Center"/>
+           </Grid>
+          </StackPanel>
          </StackPanel></Border>
         </StackPanel>
         <StackPanel x:Name="SettingsSecondary" Grid.Column="1" Spacing="12">
@@ -264,10 +321,36 @@
           <ComboBox ItemsSource="{Binding ReportModes}" SelectedItem="{Binding ReportMode}" HorizontalAlignment="Stretch"><ComboBox.ItemTemplate><DataTemplate x:DataType="x:String"><TextBlock Text="{Binding ., Converter={StaticResource EnumLabel}}"/></DataTemplate></ComboBox.ItemTemplate></ComboBox>
           <CheckBox x:Name="ContextMenuCheck" Content="{v:Tr Key=explorer_context_menu}" Click="ContextMenu_Click" ToolTip.Tip="{v:Tr Key=explorer_context_menu_tip}"/>
          </StackPanel></Border>
+         <!-- v0.2.2: update check (opt-in, GitHub releases of complicatiion/X-Shard) -->
+         <Border x:Name="UpdatesCard" Classes="card" Padding="14"><StackPanel Spacing="8">
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+           <v:AppIcon Kind="Update" Width="18" Height="18" VerticalAlignment="Center"/>
+           <TextBlock Grid.Column="1" Text="{v:Tr Key=updates}" Classes="section" VerticalAlignment="Center"/>
+           <Border Grid.Column="2" Classes="pill" Padding="10,4"><TextBlock FontSize="11"><Run Text="{v:Tr Key=installed}"/><Run Text=" "/><Run Text="{Binding CurrentVersionText}"/></TextBlock></Border>
+          </Grid>
+          <Border Classes="pill" Padding="10,8" Background="{DynamicResource XsAccentSoft}" IsVisible="{Binding UpdateAvailable}"><StackPanel Spacing="4"><TextBlock Text="{Binding UpdateStatus}" FontWeight="SemiBold" TextWrapping="Wrap"/><TextBlock Text="{Binding UpdateNotes}" FontSize="11" TextWrapping="Wrap" MaxHeight="120" IsVisible="{Binding HasUpdateNotes}"/></StackPanel></Border>
+          <TextBlock Text="{Binding UpdateStatus}" FontSize="11" TextWrapping="Wrap" Classes="muted" IsVisible="{Binding !UpdateAvailable}"/>
+          <ToggleSwitch x:Name="UpdateAutoSwitch" Classes="inline" OnContent="{v:Tr Key=check_automatically_at_start}" OffContent="{v:Tr Key=check_automatically_at_start}" IsChecked="{Binding UpdateAutoCheck}"/>
+          <ToggleSwitch Classes="inline" OnContent="{v:Tr Key=notify_about_new_versions}" OffContent="{v:Tr Key=notify_about_new_versions}" IsChecked="{Binding UpdateNotify}"/>
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+           <Button x:Name="CheckUpdatesButton" Classes="positive" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Command="{Binding CheckUpdatesCommand}"><StackPanel Orientation="Horizontal" Spacing="8"><v:AppIcon Kind="Update"/><TextBlock Text="{v:Tr Key=check_now}"/></StackPanel></Button>
+           <Button Grid.Column="1" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Command="{Binding OpenReleasePageCommand}"><StackPanel Orientation="Horizontal" Spacing="8"><v:AppIcon Kind="GitHub"/><TextBlock Text="{v:Tr Key=open_release_page}"/></StackPanel></Button>
+          </Grid>
+          <TextBlock Text="{v:Tr Key=update_privacy_note}" FontSize="11" TextWrapping="Wrap" Classes="muted"/>
+         </StackPanel></Border>
+         <Border x:Name="LocationCard" Classes="card" Padding="14"><StackPanel Spacing="10">
+          <StackPanel Orientation="Horizontal" Spacing="8"><v:AppIcon Kind="Folder" Width="18" Height="18"/><TextBlock Text="{v:Tr Key=settings_and_queue_location}" Classes="section"/></StackPanel>
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8"><Border x:Name="DataLocationPill" Classes="pill" MinHeight="42" VerticalAlignment="Stretch"><TextBlock x:Name="DataLocationText" Text="{Binding DataDirectory}" TextWrapping="Wrap" FontSize="12" VerticalAlignment="Center"/></Border><Button x:Name="DataLocationButton" Grid.Column="1" Classes="icon positive" VerticalAlignment="Center" Click="DataLocation_Click" IsEnabled="{Binding CanChangeDataLocation}" ToolTip.Tip="{v:Tr Key=choose_settings_location}"><v:AppIcon Kind="Folder"/></Button></Grid>
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+           <Button x:Name="OpenLogsButton" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Click="OpenLogs_Click"><StackPanel Orientation="Horizontal" Spacing="8"><v:AppIcon Kind="Folder"/><TextBlock Text="{v:Tr Key=open_log_folder}" TextTrimming="CharacterEllipsis"/></StackPanel></Button>
+           <Button x:Name="OpenReportsButton" Grid.Column="1" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Click="OpenReports_Click"><StackPanel Orientation="Horizontal" Spacing="8"><v:AppIcon Kind="Report"/><TextBlock Text="{v:Tr Key=open_reports_folder}" TextTrimming="CharacterEllipsis"/></StackPanel></Button>
+          </Grid>
+         </StackPanel></Border>
          <Border Classes="card" Padding="14"><StackPanel Spacing="4">
           <CheckBox Content="{v:Tr Key=scroll_entire_job_details_panel}" IsChecked="{Binding DetailsOuterScroll}"/>
           <CheckBox Content="{v:Tr Key=scan_iso_folders_recursively}" IsChecked="{Binding RecursiveFolders}"/>
           <CheckBox Content="{v:Tr Key=continue_with_the_next_job_after_an_error}" IsChecked="{Binding ContinueOnError}"/>
+          <CheckBox x:Name="SkipExistingCheck" Content="{v:Tr Key=skip_games_already_in_the_output_folder}" IsChecked="{Binding SkipExistingGames}" ToolTip.Tip="{v:Tr Key=skip_existing_tip}"/>
          </StackPanel></Border>
         </StackPanel>
        </Grid>

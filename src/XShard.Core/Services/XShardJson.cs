@@ -10,6 +10,7 @@ namespace XShard.Services;
 [JsonSerializable(typeof(LegalAcceptance))]
 [JsonSerializable(typeof(StorageLocation))]
 [JsonSerializable(typeof(string[]))]
+[JsonSerializable(typeof(ConsoleProfile))]
 internal sealed partial class XShardJsonContext:JsonSerializerContext {}
 internal static class XShardJson
 {
