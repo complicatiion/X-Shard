@@ -1,6 +1,6 @@
 # End-User License Agreement (EULA) & Terms of Use
 
-*Effective Date: September 2026*
+*Effective Date: November 2026*
 
 This End-User License Agreement ("Agreement") governs your download, installation, and use of the compiled binary releases and source code of this application ("the Software") created by **Sven Klocke (sksdesign | complicatiion)**. 
 By downloading, installing, or using the Software, you agree to be bound by the terms of this Agreement. If you do not agree, do not use the Software.
@@ -38,6 +38,14 @@ By downloading, installing, or using the Software, you agree to be bound by the 
 ### 5. Maintenance and Updates
 5.1. The developer is under no statutory or contractual obligation to provide technical support, maintenance, bug fixes, security patches, or future updates for the Software.
 5.2. Future releases or commits may modify, add, or remove features at any time without prior notice.
+5.3. The optional update check only informs you about a newer release; the Software does not download or install updates by itself.
+
+---
+
+### 5a. Third-Party Software Obtained at Your Request
+5a.1. The Software does not include any emulator, system software, BIOS, boot ROM or hard-disk image. If you choose to download an emulator (for example Xenia or xemu) via the Software, it is obtained directly from the official release page of the respective third-party project after your explicit consent.
+5a.2. Such third-party software is governed exclusively by its own license terms (for example BSD-3-Clause or GNU GPL v2), which you accept with the respective project. The developer of X-Shard is not the licensor of that software and provides no warranty, support or liability for it, within the limits of Section 4.
+5a.3. System files required by emulators (such as MCPX boot ROM, flash BIOS or hard-disk images) are protected by copyright and are not provided by the Software. You are solely responsible for using only files you are legally entitled to use, for example dumps of your own console.
 
 ---
 

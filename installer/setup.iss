@@ -1,8 +1,8 @@
-﻿#if Ver < EncodeVer(6,3,0)
- #error Inno Setup 6.3 or newer is required (x64compatible).
+﻿#if Ver < EncodeVer(6,5,2)
+ #error Inno Setup 6.5.2 or newer is required (x64compatible, PNG wizard images with transparency).
 #endif
 #ifndef AppVersion
- #define AppVersion "0.1.9"
+ #define AppVersion "0.2.2"
 #endif
 #ifndef SourceDir
  #define SourceDir "..\artifacts\publish"
@@ -33,9 +33,10 @@ MinVersion=10.0
 OutputDir={#OutputDir}
 OutputBaseFilename=X-Shard_v{#AppVersion}_win-x64_setup
 SetupIconFile=..\src\XShard\Assets\app-icon.ico
-; Wizard artwork (logo + green gradient), one file per DPI step (100/125/150/175/200 %); Setup picks the best match.
-WizardImageFile=wizard\wizard-large-100.bmp,wizard\wizard-large-125.bmp,wizard\wizard-large-150.bmp,wizard\wizard-large-175.bmp,wizard\wizard-large-200.bmp
-WizardSmallImageFile=wizard\wizard-small-100.bmp,wizard\wizard-small-125.bmp,wizard\wizard-small-150.bmp,wizard\wizard-small-175.bmp,wizard\wizard-small-200.bmp
+; Wizard artwork: large = logo on the X-Shard green gradient (welcome/finish pages, no text or version),
+; small = logo only as transparent PNG (header of all inner pages). One file per DPI step (100/125/150/175/200 %).
+WizardImageFile=wizard\wizard-large-100.png,wizard\wizard-large-125.png,wizard\wizard-large-150.png,wizard\wizard-large-175.png,wizard\wizard-large-200.png
+WizardSmallImageFile=wizard\wizard-small-100.png,wizard\wizard-small-125.png,wizard\wizard-small-150.png,wizard\wizard-small-175.png,wizard\wizard-small-200.png
 UninstallDisplayIcon={app}\X-Shard.exe
 ; One legal page: all seven documents are merged at runtime into the standard license memo (see [Code]).
 ; LICENSE_DECLARATION.rtf is only the fallback content if merging fails.

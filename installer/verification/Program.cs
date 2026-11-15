@@ -102,7 +102,7 @@ try
   try {XgdToolService.BuildArguments(option with {Format=format},"output");throw new Exception("Unsupported Xbox 360 format accepted");}catch(ArgumentException){Check(true,"Xbox 360 rejects "+format);}
  }
  Check(XgdToolService.BuildArguments(option with {Profile=DeviceProfile.Xenia,Format=OutputFormat.XISO,Scrub=ScrubMode.Full},"output").Contains("--offline"),"profile keeps offline flag without upstream auto-reset");
- Check(XgdToolService.BuildArguments(option with {Mode=XisoMode.Rewrite},"output").Contains("--full-scrub"),"XGDTool rewrite uses full scrub");
+ Check(XgdToolService.BuildArguments(option with {Mode=XisoMode.Rewrite,Scrub=ScrubMode.Full},"output").Contains("--full-scrub")&&!XgdToolService.BuildArguments(option with {Mode=XisoMode.Rewrite,Scrub=ScrubMode.None},"output").Any(a=>a.Contains("scrub")),"XGDTool rewrite follows the scrub selection (v0.2.2)");
  var fake=Environment.ProcessPath!;var xgd=new XgdToolService(process);
  Check((await xgd.ProbeAsync(fake,CancellationToken.None)).Contains("1.0.0"),"XGDTool probe contract");
  await executor.ExecuteAsync(option,fake,Log,CancellationToken.None);
@@ -198,6 +198,10 @@ try
  var loadedSettings=themed.LoadSettings();Check(loadedSettings is {Theme:"Light",Accent:"Blue",ReportMode:"Html",OutputTarget:OutputTarget.RetroBat}&&EmulatorService.LibraryFolder(OutputTarget.RetroBat,ConsolePlatform.Xbox360,loadedSettings)==Path.Combine(@"C:\RetroBat","roms","xbox360"),"v0.1.8 settings persist (source-generated JSON) and library folders resolve");
  Check(EmulatorService.LibraryFolder(OutputTarget.XemuLibrary,ConsolePlatform.Xbox360,loadedSettings)==null,"Xemu library is not offered for Xbox 360");
  var launch=EmulatorService.BuildLaunch(ConsolePlatform.Xbox,"xemu.exe",iso);Check(launch.ArgumentList.SequenceEqual(new[]{"-dvd_path",iso}),"Xemu launch arguments");
+ // v0.2.0: network shares, resumable copies, library scan and console FTP transfers.
+ await NetworkChecks.RunAsync(temp,fake,Path.Combine(temp,"god"),xex,Check,Log);
+ // v0.2.2: update check and emulator downloads (fake GitHub, no real network).
+ await OnlineChecks.RunAsync(temp,Check);
  Console.WriteLine($"SUCCESS: {checks} checks passed.");return 0;
 }
 catch(Exception ex) {Console.Error.WriteLine(ex);foreach(var line in logs.TakeLast(30))Console.Error.WriteLine(line);return 1;}

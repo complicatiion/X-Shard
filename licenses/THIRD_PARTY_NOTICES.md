@@ -20,6 +20,7 @@ XGDTool v1.0.0 by wiredopposite: GNU GPL v3. Original attribution, license and s
 | Avalonia.Win32 | 11.3.22 | MIT |
 | Avalonia.X11 | 11.3.22 | MIT |
 | ColorDocument.Avalonia | 11.0.3 | MIT |
+| FluentFTP | 54.2.1 | MIT |
 | ColorTextBlock.Avalonia | 11.0.3 | MIT |
 | HarfBuzzSharp | 8.3.1.1 | MIT |
 | HarfBuzzSharp.NativeAssets.Linux | 8.3.1.1 | MIT |
@@ -28,6 +29,7 @@ XGDTool v1.0.0 by wiredopposite: GNU GPL v3. Original attribution, license and s
 | HarfBuzzSharp.NativeAssets.Win32 | 8.3.1.1 | MIT |
 | Markdown.Avalonia.Tight | 11.0.3 | MIT |
 | MicroCom.Runtime | 0.11.0 | MIT |
+| System.Security.Cryptography.ProtectedData | 10.0.0 | MIT |
 | SkiaSharp | 2.88.9 | MIT |
 | SkiaSharp.NativeAssets.Linux | 2.88.9 | MIT |
 | SkiaSharp.NativeAssets.macOS | 2.88.9 | MIT |
@@ -35,8 +37,12 @@ XGDTool v1.0.0 by wiredopposite: GNU GPL v3. Original attribution, license and s
 | SkiaSharp.NativeAssets.Win32 | 2.88.9 | MIT |
 | Tmds.DBus.Protocol | 0.21.3 | MIT |
 
-Markdown.Avalonia / ColorTextBlock.Avalonia: copyright notices in Markdown.Avalonia-MIT.txt. Avalonia, MicroCom, .NET and native Skia/HarfBuzz/ANGLE notices accompany the package.
+Markdown.Avalonia / ColorTextBlock.Avalonia: copyright notices in Markdown.Avalonia-MIT.txt. FluentFTP (console FTP transfers, v0.2.0): FluentFTP-MIT.txt. System.Security.Cryptography.ProtectedData is part of .NET (dotnet-LICENSE.txt). Avalonia, MicroCom, .NET and native Skia/HarfBuzz/ANGLE notices accompany the package.
 
 XGDTool source archive: sources/XGDTool-source-v1.0.0.zip. Preserve it and licenses when repackaging.
 
 Original Xbox backend: separate modified Berkeley license; see extract-xiso.txt.
+
+## Not bundled: emulators (v0.2.2)
+
+X-Shard does not include or redistribute emulators. On the user's request and after consent, Xenia Canary (BSD-3-Clause, https://github.com/xenia-canary/xenia-canary) and xemu (GPL-2.0, https://github.com/xemu-project/xemu) are downloaded directly from the official GitHub releases of the respective project; their license files stay in the downloaded package. No emulator system files (MCPX boot ROM, BIOS, HDD images) are provided.

@@ -103,6 +103,10 @@
   <!-- Check marks and radio dots in the accent color instead of the system color. -->
   <Style Selector="CheckBox:checked /template/ Border#NormalRectangle"><Setter Property="Background" Value="{DynamicResource XsAccent}"/><Setter Property="BorderBrush" Value="{DynamicResource XsAccent}"/></Style>
   <Style Selector="CheckBox:checked /template/ Path#CheckGlyph"><Setter Property="Fill" Value="{DynamicResource XsOnAccent}"/></Style>
+  <!-- v0.2.2: switches in the accent color; "inline" = label right of the switch, no header -->
+  <Style Selector="ToggleSwitch:checked /template/ Border#SwitchKnobBounds, ToggleSwitch:checked:pointerover /template/ Border#SwitchKnobBounds, ToggleSwitch:checked:pressed /template/ Border#SwitchKnobBounds"><Setter Property="Background" Value="{DynamicResource XsAccent}"/><Setter Property="BorderBrush" Value="{DynamicResource XsAccent}"/></Style>
+  <Style Selector="ToggleSwitch:checked /template/ Ellipse#SwitchKnobOn"><Setter Property="Fill" Value="{DynamicResource XsOnAccent}"/></Style>
+  <Style Selector="ToggleSwitch.inline"><Setter Property="MinWidth" Value="0"/><Setter Property="VerticalAlignment" Value="Center"/><Setter Property="Padding" Value="0"/></Style>
   <Style Selector="RadioButton:checked /template/ Ellipse#OuterEllipse"><Setter Property="Stroke" Value="{DynamicResource XsAccent}"/><Setter Property="Fill" Value="{DynamicResource XsAccent}"/></Style>
   <Style Selector="Slider /template/ Thumb"><Setter Property="Background" Value="{DynamicResource XsAccent}"/></Style>
   <Style Selector="ProgressBar"><Setter Property="Foreground" Value="{DynamicResource XsAccentProgress}"/></Style>

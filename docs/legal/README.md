@@ -1,4 +1,4 @@
-# Integrated legal documents — v0.1.9
+# Integrated legal documents — v0.2.2
 
 Seven documents are included in the first-start reader, its acceptance hash and the sequential Inno Setup pages: LICENSE_DECLARATION.md, EULA.md, PRIVACY_POLICY.md, LEGAL_NOTICE.md, COPYRIGHT.md, THIRD_PARTY_LICENSES.md and GPL-3.0.md.
 

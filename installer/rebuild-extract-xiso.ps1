@@ -224,4 +224,4 @@ elseif (!$UpdateProvenance) {
  Write-Host "  SHA-256:  $newHash"
  Write-Host "  Imports:  $($imports -join ', ')"
 }
-Step 'Done. Run installer\publish-portable.ps1 to package the new backend.'
+Step 'Done. Run build\publish.ps1 to package the new backend.'

@@ -18,6 +18,9 @@ X-Shard does not include games, console firmware or emulator files.
 - **Title information** — Title ID, name, region, version and icon read directly from the image, without extracting.
 - **Device profiles and libraries** — Presets for Xbox Classic, Xbox 360, Xemu and Xenia; output straight into Xemu, Xenia, RetroBat or Batocera game folders; start results in the emulator.
 - **Advanced output** — XISO, GoD, CCI, CSO, ZAR and extracted files, with compatible scrub, split and XBE options.
+- **Network shares** — Sources and output folders on a NAS or SMB share (`\\server\share` or a mapped drive) work like local folders; interrupted connections are resumed automatically.
+- **Send to your console** — Optional FTP transfer of GoD or extracted Xbox 360 games to a modded console (RGH/JTAG) running Aurora; off until you switch it on.
+- **Library check** — Games that already exist in the output folder (as ISO, GoD or extracted, matched by Title ID) are skipped when you add a folder.
 - **Queue control** — Search, filter and sort; start, cancel, stop after the current job, retry, remove or clear; optional hibernate or shutdown afterwards.
 - **Preview and reports** — Target preview with space check before a job starts; run reports as TXT or HTML with saved space, duration and errors.
 - **Windows integration** — Taskbar progress, a notification when the queue finishes, context menu entries and a command-line tool (`xshard-cli.exe`).
@@ -34,7 +37,7 @@ X-Shard does not include games, console firmware or emulator files.
 | **Queue** | Title icon, source, operation and console, status, duration, progress, output-folder shortcut, search, status filter and sorting. |
 | **Queue footer** | Run report export, action after the queue (nothing, hibernate, shut down) and the queue controls. |
 | **Job details** | Log, image contents with filter, title information, target preview and **Start in emulator**. Open the card from the footer, or use its arrow for inline details. |
-| **Settings** | Backends, emulators and game libraries, storage location, log/report folders, appearance, UI scale, language, notifications, reports, context menu and app reset. |
+| **Settings** | Backends, emulators and game libraries, Xbox 360 console (FTP), storage location, log/report folders, appearance, UI scale, language, notifications, reports, context menu and app reset. |
 | **About** | App version, author, project links, backend attribution and licenses. |
 
 Ordinary overlay cards close through their X button or a click on the dimmed background. First-start legal information requires Accept or Decline; Decline exits the application. Press **Ctrl+F** to search the queue.
@@ -76,6 +79,42 @@ The source path is displayed in each queue row. The folder icon opens that job's
 ### Output target and game libraries
 
 Next to the output folder you can choose an **output target**: a custom folder, or the game library of **Xemu** (Xbox Classic), **Xenia** (Xbox 360), **RetroBat** or **Batocera**. Set the library folders once in **Settings › Emulators and game libraries**. RetroBat and Batocera use their `roms\xbox` and `roms\xbox360` folders; Batocera can be reached as a network share such as `\\BATOCERA\share`. For library targets, a single-file result (for example an XISO) is placed directly in the game folder instead of a per-job container folder.
+
+### Network shares (NAS / SMB)
+
+Sources and output folders can be on a network share, for example `\\NAS\roms\Xbox 360` or a mapped drive such as `Z:\`. There is no separate mode – choose the folders as usual. Mapped drives are stored as their network path (`\\server\share`), so jobs also work when X-Shard runs as administrator or from `xshard-cli` in a scheduled task.
+
+- **Interruptions:** if the share disappears (Wi-Fi, NAS restart, cable), the job waits and shows *Waiting for \\server\share – reconnecting …*. As soon as the share is back, copies continue where they stopped; if the backend was interrupted, the job restarts automatically (up to three times). After about ten minutes without the share, the job fails and the queue continues with the next one.
+- **No half-finished results:** results are written to a hidden working folder first and only renamed into place when they are complete.
+- **Extract to a share:** extracted games consist of many small files. X-Shard prepares them on the local disk first and then copies them to the share with several files at once, which is much faster than writing them one by one. GoD and image output is written to the share directly.
+- **Speed:** the network is the limit. Over Gigabit Ethernet about 100 MB/s can be expected.
+- **Already in the library:** when you add an ISO folder, X-Shard checks the output folder for games that already exist as ISO, GoD or extracted folder (same Title ID, Media ID and disc) and skips them. The skipped titles are listed.
+
+### Emulators (optional download)
+
+X-Shard does **not** include any emulator or system file. In **Settings › Emulators & Libraries** you can download or update **Xenia Canary** (Xbox 360, BSD-3-Clause) and **xemu** (Xbox Classic, GPL-2.0) from the official GitHub releases of the projects – only after you confirm a prompt that shows the project, the license and the source. The path is set automatically, and the folders can be opened from there. Each emulator is third-party software under its own license.
+
+**xemu needs system files** (MCPX boot ROM, flash BIOS, HDD image). They are protected by copyright and are not provided by X-Shard. Use dumps of your own console: **Open xemu system files folder** opens the folder for them; select the files in xemu under *Machine › System* on the first start. The files stay in place when xemu is updated.
+
+### Updates
+
+**Settings › Updates** shows the installed version. **Check now** asks GitHub for the latest X-Shard release (once you agreed). **Check automatically at start** (off by default) checks at most once a day; with **Notify** you get a Windows notification and a dot on the settings button. **Open release page** opens the download page – X-Shard never downloads or installs updates by itself.
+
+### Sending games to an Xbox 360 (FTP)
+
+For modded consoles (RGH/JTAG) with **Aurora** (FSD works as well). The feature is **off** until you enable it in **Settings › Xbox 360 console (FTP)**.
+
+1. In Aurora, enable the FTP server and note the IP address shown there.
+2. In X-Shard, switch on **Enable console transfer (FTP)**, enter the IP address and keep the Aurora defaults (user and password `xboxftp`, drive `Hdd1`) unless you changed them. Use **Test connection**.
+3. Either choose the output target **Xbox 360 console (FTP)** and convert ISOs (Convert → GoD is recommended), or use **Send to console** to send existing GoD or extracted game folders, also from your NAS.
+
+GoD games are placed in `Hdd1\Content\0000000000000000\<TitleID>\00007000` and appear in Aurora (and on the original dashboard) after a rescan. Extracted games go to `Hdd1\Games\<name>`; add that folder as a scan path in Aurora. While one game is sent, the next one is already converted. Interrupted transfers (console switched off, network lost) continue when the console is reachable again; games that are already on the console are skipped. The local transfer copy is deleted after a verified upload (can be switched off).
+
+**Scrub for the console:** create console GoD with **Scrub None** (default of the *Xbox 360 · Console* profile and the console target). Partial and Full remove the padding or rebuild the image; that saves space, but some titles – for example games with an install disc – then do not start on the console. For Xenia, scrubbed XISO is fine. GoD that was already created with scrub cannot be repaired; rebuild it from the original ISO. `xshard-cli scan` marks GoD packages that were probably scrubbed.
+
+**GoD or extracted?** GoD (without scrub) is recommended for the console: few large files transfer faster and more reliably, there is no problem with the 42-character name limit of the console file system, and the game also starts from the original dashboard. Extracted folders are useful for mods and patches.
+
+The console's FTP server is not encrypted; use it only in your own network. The password is stored encrypted for your Windows account. The Xbox 360 has a 100 Mbit network port, so a 7 GB GoD game takes about 12–15 minutes.
 
 ## Output Formats & Options
 
@@ -135,10 +174,13 @@ The installer can add **Extract with X-Shard** and **Convert with X-Shard** for 
 xshard-cli extract --output D:\Games "D:\ISO\Game.iso"
 xshard-cli convert --console xbox360 --format god --output E:\GoD "D:\ISO\Game.iso"
 xshard-cli info "D:\ISO\Game.iso"
+xshard-cli scan "\\NAS\roms\Xbox 360"
+xshard-cli convert --console xbox360 --format god --output "\\NAS\roms\GoD" --skip-existing -r "\\NAS\roms\ISO"
+xshard-cli send "\\NAS\roms\GoD\Halo 3.god-output"
 xshard-cli help
 ```
 
-It uses the same settings, backends and offline default (`--online` is required for online lookups) and can write a report with `--report run.html`. The legal documents must be accepted once in X-Shard or with `--accept-eula`.
+`scan` lists the games of a folder with Title ID and format, `--skip-existing` skips games that already exist in the output folder, `send` and `--to-console` use the console settings from X-Shard (or `--host`). It uses the same settings, backends and offline default (`--online` is required for online lookups) and can write a report with `--report run.html`. The legal documents must be accepted once in X-Shard or with `--accept-eula`.
 
 ## Included Backends & Credits
 
@@ -160,7 +202,7 @@ X-Shard is an independent project and is not an official Microsoft, XboxDev, XGD
 
 No cloud account is required. Core processing works offline after installation. Settings, source/output paths, queue metadata and the legal-acceptance hash/timestamp are stored locally in the configured data folder. Exported logs can contain local paths.
 
-X-Shard needs read access to selected sources and write access to output and settings locations. The Windows installer requests administrator permission to install the application under **Program Files**. Normal processing does not require administrator privileges.
+X-Shard needs read access to selected sources and write access to output and settings locations, including network shares you select. Console transfers connect only to the console address you entered, only when the feature is enabled; the FTP password is stored encrypted for your Windows account. The Windows installer requests administrator permission to install the application under **Program Files**. Normal processing does not require administrator privileges.
 
 External website/repository links (About and links in the legal documents) open in your browser only after you confirm them with **Yes**. Notifications register the app name with Windows for the current user; the context-menu entries are written to the registry only when you enable them. **Reset App** removes the per-user entries again. Optional online backend lookups follow the upstream services' availability and privacy practices. The included EULA, Privacy Policy, Legal Notice, Copyright and license documents explain the applicable terms.
 
@@ -171,6 +213,7 @@ External website/repository links (About and links in the legal documents) open 
 - A supported extension does not guarantee that every game or image variant will work with every output format or device.
 - Keep backups of important files and allow enough free disk space for working copies and output.
 - Do not move or remove sources, active output folders or backend files while a job is running.
+- Console transfers require a console with a custom dashboard (RGH/JTAG) and are at your own risk; keep a backup of the console drive.
 - A source-project ZIP is intended for developers; use a complete Portable or installer release to run the application directly.
 
 ## Project & Copyright
